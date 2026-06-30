@@ -1,6 +1,6 @@
-# ZeroTraceSpringBoot 邮件可靠发送演示系统
+# ZeroTraceSpringBoot 邮件发送演示系统
 
-本工程是一个基于 **Spring Boot** 的高性能、高可靠邮件投递演示系统。通过该项目，您可以直观地了解并对比 **Spring Batch 批处理**、**RabbitMQ 异步队列**、**ThreadPool 线程池并发** 以及 **Spring Task Scheduler 定时补偿** 等多种并发和异步任务处理模式，以及在轻量级 **SQLite 数据库** 环境下如何规避并发锁问题，实现数据的可靠投递。
+本工程是一个基于 **Spring Boot** 的高性能、高可靠邮件发送演示系统。通过该项目，您可以直观地了解并对比 **Spring Batch 批处理**、**RabbitMQ 异步队列**、**ThreadPool 线程池并发** 以及 **Spring Task Scheduler 定时补偿** 等多种并发和异步任务处理模式，以及在轻量级 **SQLite 数据库** 环境下如何规避并发锁问题，实现数据的可靠投递。
 
 ---
 
