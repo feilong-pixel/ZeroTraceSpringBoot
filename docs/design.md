@@ -1,4 +1,4 @@
-# ZeroTraceSpringBoot 邮件发送演示系统设计与需求说明书
+# ZeroTraceSpringBoot 邮件发送示例系统设计与需求说明书
 
 本工程是一个基于 Spring Boot 的示例项目，旨在演示 **Spring Batch (批处理)**、**Spring AMQP (消息队列)**、**Spring Async (线程池)**、**Spring Task Scheduler (计划任务)** 以及 **SQLite 数据库** 的集成与应用。
 
