@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroTrace SMTP 邮件发送中心</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090714 0%, #110c26 50%, #07050f 100%);
+            --card-bg: rgba(18, 14, 38, 0.65);
+            --card-border: rgba(255, 255, 255, 0.07);
+            --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+            --primary-glow: rgba(99, 102, 241, 0.45);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --input-bg: rgba(10, 7, 24, 0.55);
+            --input-border: rgba(255, 255, 255, 0.08);
+            --input-focus-border: #6366f1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 装饰背景霓虹光晕 */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            top: -100px;
+            left: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+            bottom: -150px;
+            right: -100px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 1.2fr 2fr;
+            gap: 2rem;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            box-shadow: 0 25px 60px rgba(99, 102, 241, 0.08);
+        }
+
+        /* 左侧配置面板 */
+        .config-sidebar {
+            background: rgba(10, 7, 24, 0.4);
+            border-right: 1px solid var(--card-border);
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .app-title-wrapper {
+            margin-bottom: 2.5rem;
+        }
+
+        .app-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .app-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .config-section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.25rem;
+        }
+
+        .config-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .config-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .config-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        /* 状态标识标签 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            width: fit-content;
+            margin-top: 1.5rem;
+        }
+
+        .status-badge.simulation {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning-color);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .status-badge.real {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success-color);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            display: inline-block;
+        }
+
+        .status-badge.simulation .status-dot {
+            animation: pulse-warn 2s infinite;
+        }
+
+        .status-badge.real .status-dot {
+            animation: pulse-success 2s infinite;
+        }
+
+        @keyframes pulse-warn {
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        @keyframes pulse-success {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* 右侧邮件写信表单 */
+        .mail-form-section {
+            padding: 2.5rem;
+        }
+
+        .form-header {
+            margin-bottom: 2rem;
+        }
+
+        .form-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .form-group-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-control:focus {
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 12px var(--primary-glow);
+            background: rgba(15, 10, 36, 0.8);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .btn-submit {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn-submit:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 旋转的加载动画 */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 气泡消息提示 Toast */
+        .toast-container {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 400px;
+        }
+
+        .toast {
+            background: rgba(20, 16, 40, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            transform: translateX(120%);
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-left: 4px solid var(--primary-glow);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left-color: var(--success-color);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger-color);
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .toast-body {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .toast-msg {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                border-radius: 16px;
+            }
+
+            .config-sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--card-border);
+                padding: 2rem;
+            }
+
+            .mail-form-section {
+                padding: 2rem;
+            }
+
+            .form-group-row {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 左侧：系统配置 -->
+        <aside class="config-sidebar">
+            <div class="config-top">
+                <div class="app-title-wrapper">
+                    <h1 class="app-logo">ZeroTrace</h1>
+                    <span class="app-subtitle">Smtp Service Center</span>
+                </div>
+
+                <h3 class="config-section-title">SMTP 配置信息</h3>
+                <ul class="config-list">
+                    <li class="config-item">
+                        <span class="config-label">SMTP 主机</span>
+                        <span class="config-value" th:text="${smtpHost}">smtp.gmail.com</span>
+                    </li>
+                    <li class="config-item">
+                        <span class="config-label">SMTP 端口</span>
+                        <span class="config-value" th:text="${smtpPort}">465</span>
+                    </li>
+                    <li class="config-item">
+                        <span class="config-label">发件账号</span>
+                        <span class="config-value" th:text="${smtpUsername}">sender@example.com</span>
+                    </li>
+                    <li class="config-item">
+                        <span class="config-label">发件人别名</span>
+                        <span class="config-value" th:text="${smtpSenderName}">Fei Long Lab</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="config-bottom">
+                <div th:class="${debugFlag == '0'} ? 'status-badge simulation' : 'status-badge real'">
+                    <span class="status-dot"></span>
+                    <span th:text="${debugFlag == '0'} ? '拦截测试模式 (Simulation)' : '真实发送模式 (SMTP Live)'">拦截测试模式 (Simulation)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右侧：邮件发送表单 -->
+        <main class="mail-form-section">
+            <div class="form-header">
+                <h2>发送新邮件</h2>
+                <p>支持发送普通文本或 HTML 格式富文本格式的邮件</p>
+            </div>
+
+            <form id="mailForm" onsubmit="handleSendMail(event)">
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="toName">收件人姓名</label>
+                        <input type="text" id="toName" class="form-control" placeholder="例如：张三" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="toMailAddress">收件人邮箱 *</label>
+                        <input type="email" id="toMailAddress" class="form-control" placeholder="recipient@example.com" required autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">邮件主题 *</label>
+                    <input type="text" id="subject" class="form-control" placeholder="请输入邮件标题主题" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label for="textContent">邮件内容 (HTML) *</label>
+                    <textarea id="textContent" class="form-control" placeholder="可以使用 <h1> <a> <p> 等 HTML 标签包裹您的内容" required></textarea>
+                </div>
+
+                <button type="submit" id="btnSubmit" class="btn-submit">
+                    <span id="spinner" class="spinner"></span>
+                    <span id="btnText">确认发送</span>
+                </button>
+            </form>
+        </main>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // 浮动通知逻辑
+        function showToast(title, message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = '⚡';
+            if (type === 'success') icon = '✓';
+            if (type === 'error') icon = '✗';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-body">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-msg">${message}</div>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // 触发进入过渡
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 50);
+            
+            // 4秒后自动移除
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 350);
+            }, 4000);
+        }
+
+        // 处理表单提交
+        async function handleSendMail(event) {
+            event.preventDefault();
+
+            const btnSubmit = document.getElementById('btnSubmit');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('spinner');
+
+            const toName = document.getElementById('toName').value.trim();
+            const toMailAddress = document.getElementById('toMailAddress').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const textContent = document.getElementById('textContent').value.trim();
+
+            if (!toMailAddress || !subject || !textContent) {
+                showToast('输入验证失败', '请确保所有必填项已正确输入。', 'error');
+                return;
+            }
+
+            // 禁用按钮并展示 Spinner 动画
+            btnSubmit.disabled = true;
+            btnText.textContent = '发送中...';
+            spinner.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        toName: toName || toMailAddress, // 若姓名为空，用邮箱暂代
+                        ToMailAddress: toMailAddress,
+                        subject: subject,
+                        textContent: textContent
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showToast('发送成功', data.message || '邮件已成功寄出！', 'success');
+                    // 清空表单
+                    document.getElementById('mailForm').reset();
+                } else {
+                    showToast('发送失败', data.message || '请求出现异常，发送未成功。', 'error');
+                }
+            } catch (error) {
+                console.error('API 异常:', error);
+                showToast('通讯失败', '无法连接到服务器，请检查后端运行状态。', 'error');
+            } finally {
+                // 恢复按钮状态
+                btnSubmit.disabled = false;
+                btnText.textContent = '确认发送';
+                spinner.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
