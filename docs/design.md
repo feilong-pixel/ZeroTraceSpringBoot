@@ -2,20 +2,20 @@
 
 本工程是一个基于 Spring Boot 的示例项目，旨在演示 **Spring Batch (批处理)**、**Spring AMQP (消息队列)**、**Spring Async (线程池)**、**Spring Task Scheduler (计划任务)** 以及 **SQLite 数据库** 的集成与应用。
 
-项目核心业务场景为：**可靠性邮件发送系统**。通过多种模式（队列、线程池、批处理、定时轮询）演示如何实现高可靠、防丢失的邮件发送机制，并展示不同架构下的技术差异。
+项目核心业务场景为：**邮件发送示例系统**。通过多种模式（队列、线程池、批处理、定时轮询）演示邮件发送流程，并展示不同架构下的技术差异。
 
 ---
 
 ## 一、 系统架构与关键技术对比
 
 ### 1. 消息队列 (Spring AMQP) vs 线程池 (Spring Executor)
-本系统的一大设计目标是对比**消息队列**与**内存线程池**在处理高并发、突发流量时的容错与可靠性表现：
+本系统的一大设计目标是对比**消息队列**与**内存线程池**在处理并发与异常时的机制表现：
 
 | 特性维度 | 消息队列 (Spring AMQP / RabbitMQ) | 线程池 (Spring TaskExecutor) |
 | :--- | :--- | :--- |
-| **内存溢出时的消息持久性** | **高可靠**：即使队列溢出或服务宕机，AMQP 代理（如 RabbitMQ）支持消息持久化，消息不会丢失。 | **易丢失**：若内存队列（如 `LinkedBlockingQueue`）溢出或应用宕机，内存中的待处理邮件任务将全部丢失。 |
-| **高并发限流/削峰** | 极佳。消费者根据自身消费能力拉取或推送消息，天然起到削峰填谷的作用。 | 较好。通过调整线程池的核心线程数、最大线程数和阻塞队列大小进行限流。 |
-| **错误恢复与重试机制** | **结合数据库实现 (ZeroTrace)**：当队列消费失败或发送超时，将异常邮件记录写入 SQLite 数据库，由后台定时任务进行补偿和重新发送，实现零丢失 (ZeroTrace) 的高可靠投递。 | **数据库补偿**：由于内存任务易丢失，系统必须将所有邮件在发送前持久化至数据库。当线程池任务执行失败或发生内存丢失时，通过轮询数据库重新提交任务。 |
+| **内存溢出时的消息持久性** | 即使队列溢出或服务宕机，AMQP 代理（如 RabbitMQ）支持消息持久化。 | 若内存队列（如 `LinkedBlockingQueue`）溢出或应用宕机，内存中的待处理邮件任务将丢失。 |
+| **高并发限流/削峰** | 消费者根据自身消费能力拉取或推送消息，天然起到削峰填谷的作用。 | 通过调整线程池的核心线程数、最大线程数和阻塞队列大小进行限流。 |
+| **错误恢复与重试机制** | **结合数据库实现**：当队列消费失败或发送超时，将异常邮件记录写入 SQLite 数据库，由后台定时任务进行补偿和重新发送。 | **数据库补偿**：将邮件在发送前持久化至数据库。当线程池任务执行失败时，通过轮询数据库重新提交任务。 |
 
 ### 2. Spring 计划任务 (Scheduled Tasks) 的配置方式
 系统演示了以下几种计划任务的调用与配置方式：
@@ -38,7 +38,7 @@
 | `mail_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | 邮件唯一标识 ID |
 | `status` | `INTEGER` | `DEFAULT 0` | 邮件发送状态（`0`：未发送；`1`：发送成功；`9`：发送失败） |
 | `retry_count`| `INTEGER` | `DEFAULT 0` | 尝试发送次数（最大数值：3） |
-| `sent_at` | `DATETIME` | `NULL` | 成功发送的日期与时间 |
+| `sent_at` | `DATETIME` | `NULL` | 发送的日期与时间 |
 | `to_name` | `VARCHAR` | `NOT NULL` | 收件人显示姓名 |
 | `to_email` | `VARCHAR` | `NOT NULL` | 收件人电子邮箱地址 |
 | `subject` | `VARCHAR` | `NOT NULL` | 邮件标题 |
@@ -51,7 +51,7 @@
 | 字段名 (Field) | 类型 (Type) | 约束/默认值 | 描述 (Description) |
 | :--- | :--- | :--- | :--- |
 | `log_id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | 日志唯一标识 ID |
-| `mail_id` | `INTEGER` | `NOT NULL` | 关联的邮件 ID |
+| `mail_id` | `INTEGER` | `NOT NULL` | 关联 of 邮件 ID |
 | `sent_at` | `DATETIME` | `NOT NULL` | 本次发送时间 |
 | `status` | `INTEGER` | `NOT NULL` | 发送状态（`1`：发送成功；`9`：发送失败） |
 | `attempt` | `INTEGER` | `NOT NULL` | 本次是第几次尝试发送 |
@@ -98,10 +98,10 @@ CREATE INDEX IF NOT EXISTS idx_mail_info_status ON mail_info(status, retry_count
 *   **具体流程**：
     1.  提供一个标准的 Spring Batch 作业，包含 `Reader` (从 SQLite 读取未发送邮件)、`Processor` (调用邮件发送客户端并记录结果，单封发送) 和 `Writer` (单封事务更新 `mail_info` 及写入 `mail_send_log`)。
     2.  支持从外部命令行（非 Web 容器生命周期内）传入特定 Job 参数并调用该批处理。
-    3.  适用于每天/每小时的例行、高通量邮件发送业务。
+    3.  适用于每天/每小时的例行批处理作业演示。
 
-### 场景 2：使用 Spring 消息队列 (AMQP / RabbitMQ) 与 ZeroTrace 可靠重试
-*   **需求目标**：演示基于 AMQP 消息队列发送邮件，并结合数据库设计实现防丢失的 **ZeroTrace** 重试效果。
+### 场景 2：使用 Spring 消息队列 (AMQP / RabbitMQ) 与重试补偿
+*   **需求目标**：演示基于 AMQP 消息队列发送邮件，并结合数据库设计实现重试补偿效果。
 *   **具体流程**：
     1.  当系统收到发送邮件的 API 请求时，先将邮件写入 `mail_info` 数据库，并将 `mail_id` 作为消息发布至 RabbitMQ 队列。
     2.  监听器消费消息，读取 `mail_info` 并通过 `SmtpClient` 发送邮件。
@@ -113,18 +113,18 @@ CREATE INDEX IF NOT EXISTS idx_mail_info_status ON mail_info(status, retry_count
 *   **具体流程**：
     1.  配置一个 Spring `ThreadPoolTaskExecutor` 专有线程池，核心线程数为 2，最大线程数为 5，队列容量为 10，并设置拒绝策略为 `AbortPolicy`。
     2.  暴露 `POST /threadpool/sendmail` 接口。当接收到批量邮件发送指令时，首先在事务中将所有邮件前置持久化为 `PENDING` (0) 状态，然后使用带有 `@Async("mailThreadPoolExecutor")` 的异步方法委托给线程池子线程并发发送。
-    3.  若线程池和队列均满，后续任务将触发 `RejectedExecutionException` 异常。系统捕获该异常后，将这部分因队列溢出被拒绝的邮件在数据库中更新为发送失败状态（`status` = 9，并记录错误日志），确保数据不丢失，并对客户端返回 500 状态码（提示成功/拒绝的具体计数）。
+    3.  若线程池和队列均满，后续任务将触发 `RejectedExecutionException` 异常。系统捕获该异常后，将这部分因队列溢出被拒绝的邮件在数据库中更新为发送失败状态（`status` = 9，并记录错误日志），并对客户端返回 500 状态码（提示成功/拒绝的具体计数）。
 
 ### 场景 4：使用 Spring Task Scheduler 定时轮询（补偿重试机制）
 *   **需求目标**：展示如何基于 Spring Cron 表达式计划任务实现对未发送/失败邮件的定期补偿轮询。
 *   **具体流程**：
     1.  开启 `@EnableScheduling`，使用 `@Scheduled(cron = "${mail.scheduler.cron:0 */10 8-23 * * MON-FRI}")` 注解设置在**周一到周五的 8:00 ~ 23:00 时间段内，每 10 分钟**自动触发一次轮询器。
     2.  每次执行时，扫描 `mail_info` 中 `status = 0` (未发送) 或 `status = 9` (发送失败，且已重试次数 `retry_count < 3`) 的记录。
-    3.  复用单一的 SMTP 客户端连接，批量加载并投递这些邮件。每封邮件的投递结果落盘（更新 `mail_info` 及写入 `mail_send_log`）都归属于一个具有 `REQUIRES_NEW` 属性的独立短事务，确保最终一致性与锁快速释放。
+    3.  复用单一的 SMTP 客户端连接，批量加载并投递这些邮件。每封邮件的投递结果落盘（更新 `mail_info` 及写入 `mail_send_log`）都归属于一个具有 `REQUIRES_NEW` 属性的独立短事务，确保事务与连接管理。
     4.  暴露 `GET /scheduler/status` 端点供外部查看当前定时器配置（启用状态、Cron 表达式和当前积压数），并提供 `POST /scheduler/trigger` 端点供随时手动触发轮询重试。
 
 ### 场景 5：SQLite 数据库多事务隔离控制
-*   **需求目标**：展示在 SQLite 文件级锁限制下，如何实现安全的并发事务控制。
+*   **需求目标**：展示在 SQLite 文件级锁限制下，如何实现并发事务控制。
 *   **具体流程**：
     1.  多线程或多进程并发操作同一 SQLite 文件时，避免在单个大事务中合并处理所有邮件，否则会引发 `SQLITE_BUSY` 异常。
     2.  **设计要求**：采用**单个独立事务处理一封邮件**的粒度。每封邮件在读取、执行发送、修改状态及写入日志的过程都必须归属于它自己独立的短事务（`Propagation.REQUIRES_NEW`），确保快速释放文件锁，最大化并发能力。
