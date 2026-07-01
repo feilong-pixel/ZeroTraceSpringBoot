@@ -38,8 +38,8 @@ sequenceDiagram
     actor User as 客户端
     participant Controller as ThreadPoolSendMailController
     participant Service as ThreadPoolSendMailService
-    database DB as SQLite (mail_info)
-    participant Pool as mailThreadPoolExecutor (2/5/10)
+    database DB as "SQLite (mail_info)"
+    participant Pool as "mailThreadPoolExecutor (2/5/10)"
 
     User->>Controller: POST /threadpool/sendmail (List<MailRequest>)
     activate Controller

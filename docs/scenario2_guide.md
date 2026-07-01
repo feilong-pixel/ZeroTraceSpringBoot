@@ -35,8 +35,8 @@ sequenceDiagram
     actor User as 客户端
     participant Controller as MqSendMailController
     participant Service as MqSendMailService
-    database DB as SQLite (mail_info)
-    participant MQ as RabbitMQ (mail.queue)
+    database DB as "SQLite (mail_info)"
+    participant MQ as "RabbitMQ (mail.queue)"
 
     User->>Controller: POST /mq/sendmail (MailRequest)
     Controller->>Service: sendMailAsync(request)
