@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import com.feilonglab.springboot.model.entity.MailInfo;
 
 /**
@@ -22,6 +24,9 @@ public class ThymeleafDemoController {
 
     @Autowired
     private ThymeleafDemoService demoService;
+
+    @Autowired
+    private MessageSource messageSource;
 
     /**
      * 1. 展示邮件列表页面。
@@ -38,7 +43,8 @@ public class ThymeleafDemoController {
     @GetMapping
     public String list(Model model, @RequestParam(required = false, defaultValue = "true") Boolean login) {
         // 知识点 1：渲染普通文本变量到页面
-        model.addAttribute("message", "Hello Thymeleaf! 欢迎来到 Spring Boot + Thymeleaf 极简入门示例。");
+        String msg = messageSource.getMessage("ui.thymeleaf.demo.message", null, LocaleContextHolder.getLocale());
+        model.addAttribute("message", msg);
 
         // 知识点 2：将列表注入 Model，在前端利用 th:each 循环遍历
         model.addAttribute("mailList", demoService.getMailList());
@@ -60,7 +66,8 @@ public class ThymeleafDemoController {
     public String showCreateForm(Model model) {
         // 知识点 4：初始化一个空对象并命名为 "mail"，用于表单中的 th:object 绑定
         model.addAttribute("mail", new MailInfo());
-        model.addAttribute("title", "创建新邮件 (Create Mail)");
+        String title = messageSource.getMessage("ui.thymeleaf.demo.create.title", null, LocaleContextHolder.getLocale());
+        model.addAttribute("title", title);
         return "demo/thymeleaf/form";
     }
 
@@ -78,7 +85,8 @@ public class ThymeleafDemoController {
             return "redirect:/demo/thymeleaf";
         }
         model.addAttribute("mail", mail);
-        model.addAttribute("title", "编辑邮件 (Edit Mail)");
+        String title = messageSource.getMessage("ui.thymeleaf.demo.edit.title", null, LocaleContextHolder.getLocale());
+        model.addAttribute("title", title);
         return "demo/thymeleaf/form";
     }
 

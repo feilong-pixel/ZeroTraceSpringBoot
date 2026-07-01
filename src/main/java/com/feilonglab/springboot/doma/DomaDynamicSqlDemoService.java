@@ -14,6 +14,7 @@ import com.feilonglab.springboot.model.entity.MailInfo;
 @Service
 public class DomaDynamicSqlDemoService {
 
+    /** Doma 动态 SQL 示例 DAO */
     @Autowired
     private DomaDynamicSqlDemoDao demoDao;
 

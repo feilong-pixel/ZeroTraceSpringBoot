@@ -139,6 +139,7 @@ public class SendMailService {
             mail.setStatus(MailStatus.SUCCESS.getValue()); // 发送成功
             mail.setSentAt(processedAt);
 
+            // 使用乐观锁更新数据库，确保在高并发场景下不会覆盖其他线程的更新
             int updated = mailInfoDao.update(mail);
             if (updated == 0) {
                 logger.error(MessageUtils.getMessage("mail.db.optimistic.lock", mail.getMailId()));
@@ -153,6 +154,7 @@ public class SendMailService {
             sendLog.setAttempt(attempt);
             sendLog.setErrorReason(null);
 
+            // 3. 将成功日志插入数据库
             mailSendLogDao.insert(sendLog);
         } catch (Exception e) {
             logger.error(MessageUtils.getMessage("mail.db.save.success.error", mail.getMailId()), e);
@@ -185,6 +187,7 @@ public class SendMailService {
             mail.setStatus(MailStatus.FAILED.getValue()); // 发送失败
             mail.setSentAt(null);
 
+            // 使用乐观锁更新数据库，确保在高并发场景下不会覆盖其他线程的更新
             int updated = mailInfoDao.update(mail);
             if (updated == 0) {
                 logger.error(MessageUtils.getMessage("mail.db.optimistic.lock", mail.getMailId()));
@@ -199,6 +202,7 @@ public class SendMailService {
             sendLog.setAttempt(attempt);
             sendLog.setErrorReason(errorReason);
 
+            // 3. 将失败日志插入数据库
             mailSendLogDao.insert(sendLog);
         } catch (Exception e) {
             logger.error(MessageUtils.getMessage("mail.db.save.failure.error", mail.getMailId()), e);

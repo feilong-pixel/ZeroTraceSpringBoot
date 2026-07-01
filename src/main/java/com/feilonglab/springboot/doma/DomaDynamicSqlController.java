@@ -83,12 +83,23 @@ public class DomaDynamicSqlController {
         return buildResponse("Doma Dynamic SQL Demo: Optional Date Filter", result, format, acceptHeader);
     }
 
+    /**
+     * 根据请求的格式和 Accept 头部，构建适当的响应。
+     * 
+     * @param title
+     * @param result
+     * @param format
+     * @param acceptHeader
+     * @return
+     */
     private ResponseEntity<?> buildResponse(String title, DomaDynamicSqlDemoService.SearchResult result, String format,
             String acceptHeader) {
 
+        // 根据请求参数或 Accept 头部判断是否返回 JSON 格式
         boolean wantJson = "json".equalsIgnoreCase(format)
                 || (acceptHeader != null && acceptHeader.contains(MediaType.APPLICATION_JSON_VALUE));
 
+        // 如果请求 JSON，则返回结构化的 JSON 响应
         if (wantJson) {
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(result);
         }
@@ -98,8 +109,16 @@ public class DomaDynamicSqlController {
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(consoleText);
     }
 
+    /**
+     * 格式化输出结果为控制台风格文本，便于在浏览器中查看。
+     * 
+     * @param title 
+     * @param result 
+     * @return
+     */
     private String formatConsoleOutput(String title, DomaDynamicSqlDemoService.SearchResult result) {
         StringBuilder sb = new StringBuilder();
+        // 输出标题和分隔线
         sb.append("========================================================================\n");
         sb.append("  ").append(title).append("\n");
         sb.append("========================================================================\n\n");

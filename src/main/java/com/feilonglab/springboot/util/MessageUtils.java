@@ -3,8 +3,10 @@ package com.feilonglab.springboot.util;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 /**
  * 统一的国际化消息资源工具类。
@@ -14,14 +16,22 @@ import org.springframework.stereotype.Component;
 public class MessageUtils {
 
     private static MessageSource messageSource;
+    private static Locale defaultLocale = Locale.ENGLISH;
 
     /**
      * 构造函数，由 Spring 容器自动注入 MessageSource 并保存到静态域中。
      *
      * @param messageSource Spring MessageSource
      */
-    public MessageUtils(MessageSource messageSource) {
+    public MessageUtils(MessageSource messageSource, @Value("${app.locale:en}") String localeStr) {
         MessageUtils.messageSource = messageSource;
+        if (localeStr != null && !localeStr.isEmpty()) {
+            try {
+                MessageUtils.defaultLocale = StringUtils.parseLocaleString(localeStr);
+            } catch (Exception e) {
+                // Fallback to default
+            }
+        }
     }
 
     /**
@@ -38,13 +48,13 @@ public class MessageUtils {
     public static String getMessage(String key, Object... args) {
         if (messageSource != null) {
             try {
-                return messageSource.getMessage(key, args, Locale.CHINA);
+                return messageSource.getMessage(key, args, defaultLocale);
             } catch (Exception e) {
                 // 解析失败时降级使用 ResourceBundle 兜底
             }
         }
         try {
-            ResourceBundle bundle = ResourceBundle.getBundle("message", Locale.CHINA);
+            ResourceBundle bundle = ResourceBundle.getBundle("message", defaultLocale);
             String pattern = bundle.getString(key);
             return MessageFormat.format(pattern, args);
         } catch (Exception e) {

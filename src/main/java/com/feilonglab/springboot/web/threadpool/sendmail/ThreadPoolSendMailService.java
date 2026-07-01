@@ -23,20 +23,23 @@ import com.feilonglab.springboot.model.entity.MailSendLog;
 import com.feilonglab.springboot.util.MessageUtils;
 
 /**
- * 场景 3：邮件发送线程池异步业务层服务。
- * 负责将多封邮件先做持久化落盘，再通过本地线程池执行并发发送，保障发送过程不阻塞主线程。
+ * 场景 3：邮件发送线程池异步业务层服务。 负责将多封邮件先做持久化落盘，再通过本地线程池执行并发发送，保障发送过程不阻塞主线程。
  */
 @Service
 public class ThreadPoolSendMailService {
 
+    /** 日志 */
     private static final Logger logger = LoggerFactory.getLogger(ThreadPoolSendMailService.class);
 
+    /** 注入邮件信息数据访问对象 */
     @Autowired
     private MailInfoDao mailInfoDao;
 
+    /** 注入邮件发送日志数据访问对象 */
     @Autowired
     private MailSendLogDao mailSendLogDao;
 
+    /** 注入 SmtpClient 工厂 */
     @Autowired
     private ObjectFactory<SmtpClient> smtpClientFactory;
 
@@ -46,8 +49,7 @@ public class ThreadPoolSendMailService {
     private ThreadPoolSendMailService self;
 
     /**
-     * 持久化单封邮件，并返回其持久化对象。
-     * 为保证任务提交的及时性，单封邮件以独立事务入库。
+     * 持久化单封邮件，并返回其持久化对象。 为保证任务提交的及时性，单封邮件以独立事务入库。
      *
      * @param request 邮件发送请求
      * @return 持久化的 MailInfo 实体
@@ -67,8 +69,7 @@ public class ThreadPoolSendMailService {
     }
 
     /**
-     * 触发异步的发送任务。
-     * 此方法会被代理包装，使用指定的 mailThreadPoolExecutor 异步执行。
+     * 触发异步的发送任务。 此方法会被代理包装，使用指定的 mailThreadPoolExecutor 异步执行。
      *
      * @param mailId 邮件唯一ID
      */
@@ -166,6 +167,7 @@ public class ThreadPoolSendMailService {
             int attempt = mail.getRetryCount() + 1;
             LocalDateTime processedAt = LocalDateTime.now();
 
+            // 更新邮件状态
             mail.setRetryCount(attempt);
             mail.setStatus(MailStatus.FAILED.getValue());
             mail.setSentAt(null);
@@ -176,6 +178,7 @@ public class ThreadPoolSendMailService {
                 return;
             }
 
+            // 持久化发送日志
             MailSendLog sendLog = new MailSendLog();
             sendLog.setMailId(mail.getMailId());
             sendLog.setSentAt(processedAt);

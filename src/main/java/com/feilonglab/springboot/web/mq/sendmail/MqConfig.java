@@ -32,9 +32,14 @@ public class MqConfig {
      */
     @Bean
     public JmsListenerContainerFactory<?> jmsListenerContainerFactory(ConnectionFactory connectionFactory) {
+        // 创建默认的 JMS 监听器容器工厂实例
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        // 设置连接工厂，确保监听器能够连接到 ActiveMQ Artemis 消息队列
         factory.setConnectionFactory(connectionFactory);
+        // 设置并发消费者数量，允许在指定范围内动态调配线程以处理消息
         factory.setConcurrency(concurrency);
+        // 设置每个任务处理的最大消息数，避免单个任务处理过多消息导致阻塞
+        factory.setMaxMessagesPerTask(20);
         return factory;
     }
 }

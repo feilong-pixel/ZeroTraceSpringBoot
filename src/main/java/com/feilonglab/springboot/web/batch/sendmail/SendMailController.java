@@ -53,14 +53,17 @@ public class SendMailController {
      * @return 响应包装实体 Map
      */
     private ResponseEntity<Map<String, Object>> executeSend() {
+        // 1. 初始化响应结果 Map
         Map<String, Object> result = new HashMap<>();
         try {
+            // 2. 调用邮件发送服务执行批量发送，并获取成功发送的邮件数量
             int successCount = sendMailService.processBatchSend();
             result.put("success", true);
             result.put("message", MessageUtils.getMessage("controller.batch.success"));
             result.put("successCount", successCount);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
+            // 3. 捕获异常，记录错误日志，并返回失败响应
             result.put("success", false);
             result.put("message", MessageUtils.getMessage("controller.batch.error", e.getMessage()));
             return ResponseEntity.internalServerError().body(result);

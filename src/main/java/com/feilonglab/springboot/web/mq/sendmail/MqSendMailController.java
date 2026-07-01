@@ -15,16 +15,13 @@ import com.feilonglab.smtp.unified.MailRequest;
 import com.feilonglab.springboot.util.MessageUtils;
 
 /**
- * 邮件发送 MQ 模式控制层。
- * 暴露 Web API 接口，用于接收邮件请求并将其推入消息队列进行异步可靠发送。
+ * 邮件发送 MQ 模式控制层。 暴露 Web API 接口，用于接收邮件请求并将其推入消息队列进行异步可靠发送。
  */
 @RestController
 @RequestMapping("/mq")
 public class MqSendMailController {
 
-    /**
-     * 注入邮件发送服务。
-     */
+    /** 注入邮件发送服务 */
     @Autowired
     private MqSendMailService mqSendMailService;
 

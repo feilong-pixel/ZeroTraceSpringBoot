@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doma 动态 SQL 交互式示例</title>
+    <title th:text="#{ui.doma.title}">Doma Dynamic SQL Interactive Demo</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -514,64 +514,70 @@
     <!-- 左侧侧边栏 -->
     <div class="sidebar">
         <div class="app-title-wrapper">
-            <div class="app-logo">ZeroTrace Doma</div>
-            <div class="app-subtitle">动态 SQL 交互中心</div>
+            <div class="app-logo" th:text="#{ui.doma.sidebar.logo}">ZeroTrace Doma</div>
+            <div class="app-subtitle" th:text="#{ui.doma.sidebar.subtitle}">Dynamic SQL Interactive Center</div>
         </div>
 
         <!-- 演示导航按钮 -->
         <div class="demo-nav">
             <button class="demo-btn active" onclick="switchDemo('mail', this)">
-                <span class="demo-btn-title">示例 1: Parameter & If</span>
-                <span class="demo-btn-desc">参数绑定与条件判断 /*%if */</span>
+                <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title1}">示例 1: Parameter & If</span>
+                <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc1}">参数绑定与条件判断 /*%if */</span>
             </button>
             <button class="demo-btn" onclick="switchDemo('in', this)">
-                <span class="demo-btn-title">示例 2: For Loop & IN</span>
-                <span class="demo-btn-desc">列表循环与 IN 语句 /*%for */</span>
+                <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title2}">示例 2: For Loop & IN</span>
+                <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc2}">列表循环与 IN 语句 /*%for */</span>
             </button>
             <button class="demo-btn" onclick="switchDemo('optional', this)">
-                <span class="demo-btn-title">示例 3: Optional Date</span>
-                <span class="demo-btn-desc">可选条件的日期过滤 (sent_at)</span>
+                <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title3}">示例 3: Optional Date</span>
+                <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc3}">可选条件的日期过滤 (sent_at)</span>
             </button>
         </div>
 
         <!-- 参数控制区 -->
         <div class="params-panel">
-            <div class="panel-title">Query Parameters</div>
+            <div class="panel-title" th:text="#{ui.doma.sidebar.params.title}">Query Parameters</div>
 
             <!-- Form 1: Mail Search -->
             <div id="form-mail" class="param-form active">
                 <div class="form-group">
-                    <label for="mail-status">状态 (status)</label>
+                    <label for="mail-status" th:text="#{ui.doma.sidebar.params.status}">状态 (status)</label>
                     <select id="mail-status">
-                        <option value="">(null) - 不应用过滤</option>
-                        <option value="0">0 - 未发送 (Unsent)</option>
-                        <option value="1">1 - 发送成功 (Success)</option>
-                        <option value="9">9 - 发送失败 (Failed)</option>
+                        <option value="" th:text="#{ui.doma.sidebar.params.status.null}">(null) - 不应用过滤</option>
+                        <option value="0" th:text="#{ui.doma.sidebar.params.status.unsent}">0 - 未发送 (Unsent)</option>
+                        <option value="1" th:text="#{ui.doma.sidebar.params.status.success}">1 - 发送成功 (Success)</option>
+                        <option value="9" th:text="#{ui.doma.sidebar.params.status.failed}">9 - 发送失败 (Failed)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="mail-keyword">主题模糊词 (keyword)</label>
-                    <input type="text" id="mail-keyword" placeholder="输入关键词，例如：Batch" />
+                    <label for="mail-keyword" th:text="#{ui.doma.sidebar.params.keyword}">主题模糊词 (keyword)</label>
+                    <input type="text" id="mail-keyword" th:placeholder="#{ui.doma.sidebar.params.keyword.placeholder}" />
                 </div>
             </div>
 
             <!-- Form 2: IN Search -->
             <div id="form-in" class="param-form">
                 <div class="form-group">
-                    <label for="in-ids">ID 列表 (逗号分隔)</label>
-                    <input type="text" id="in-ids" value="1,2,3" placeholder="例如: 1, 2" />
+                    <label for="in-ids" th:text="#{ui.doma.sidebar.params.in.ids}">ID 列表 (逗号分隔)</label>
+                    <input type="text" id="in-ids" value="1,2,3" th:placeholder="#{ui.doma.sidebar.params.in.ids.placeholder}" />
                 </div>
             </div>
 
             <!-- Form 3: Optional Date -->
             <div id="form-optional" class="param-form">
                 <div class="form-group">
-                    <label for="optional-date">起止日期 (fromDate)</label>
+                    <label for="optional-date" th:text="#{ui.doma.sidebar.params.optional.date}">起止日期 (fromDate)</label>
                     <input type="date" id="optional-date" />
                 </div>
             </div>
 
-            <button class="btn-run" onclick="runQuery()">执行查询 & 打印 SQL</button>
+            <button class="btn-run" onclick="runQuery()" th:text="#{ui.doma.sidebar.params.run}">执行查询 & 打印 SQL</button>
+        </div>
+
+        <div class="lang-switch-wrapper" style="margin-top: auto; display: flex; gap: 0.5rem; font-size: 0.85rem; align-items: center; justify-content: flex-start; padding-left: 0.5rem;">
+            <a href="?lang=zh_CN" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'zh'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.chinese}">中文</a>
+            <span style="color: var(--card-border);">|</span>
+            <a href="?lang=en_US" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'en'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.english}">English</a>
         </div>
 
         <a href="/" class="back-link">
@@ -579,7 +585,7 @@
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            返回主页
+            <span th:text="#{ui.doma.sidebar.back}">返回主页</span>
         </a>
     </div>
 
@@ -622,7 +628,7 @@
                     <line x1="3" y1="9" x2="21" y2="9"></line>
                     <line x1="3" y1="15" x2="21" y2="15"></line>
                 </svg>
-                <span>数据查询结果 (SQLite Database Results)</span>
+                <span th:text="#{ui.doma.results.title}">数据查询结果 (SQLite Database Results)</span>
             </div>
             <div class="table-wrapper">
                 <table>
@@ -638,7 +644,7 @@
                     </thead>
                     <tbody id="results-tbody">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: var(--text-muted);">暂无查询结果，请点击“执行查询”按钮</td>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted);" th:text="#{ui.doma.results.empty}">暂无查询结果，请点击“执行查询”按钮</td>
                         </tr>
                     </tbody>
                 </table>
@@ -650,26 +656,36 @@
     <div class="features-container">
         <div class="feature-card">
             <span class="feature-icon">🛡️</span>
-            <div class="feature-title">参数绑定</div>
-            <div class="feature-desc">SQL 注释语法中 <code>/* status */0</code> 在编译期生成参数占位符并安全绑定，防止 SQL 注入。</div>
+            <div class="feature-title" th:text="#{ui.doma.feature.title1}">参数绑定</div>
+            <div class="feature-desc" th:utext="#{ui.doma.feature.desc1}">SQL 注释语法中 <code>/* status */0</code> 在编译期生成参数占位符并安全绑定，防止 SQL 注入。</div>
         </div>
         <div class="feature-card">
             <span class="feature-icon">⚡</span>
-            <div class="feature-title">动态判断与循环</div>
-            <div class="feature-desc">利用 <code>/*%if */</code> 动态拼接 WHERE 条件，<code>/*%for */</code> 实现集合遍历。</div>
+            <div class="feature-title" th:text="#{ui.doma.feature.title2}">动态判断与循环</div>
+            <div class="feature-desc" th:utext="#{ui.doma.feature.desc2}">利用 <code>/*%if */</code> 动态拼接 WHERE 条件，<code>/*%for */</code> 实现集合遍历。</div>
         </div>
         <div class="feature-card">
             <span class="feature-icon">📖</span>
-            <div class="feature-title">注释型 SQL 模板</div>
-            <div class="feature-desc">因为所有语法都是基于标准 SQL 注释实现的，SQL 文件可以被直接放入 DBeaver 或 Datagrip 等工具直接阅读和执行。</div>
+            <div class="feature-title" th:text="#{ui.doma.feature.title3}">注释型 SQL 模板</div>
+            <div class="feature-desc" th:text="#{ui.doma.feature.desc3}">因为所有语法都是基于标准 SQL 注释实现的，SQL 文件可以被直接放入 DBeaver 或 Datagrip 等工具直接阅读和执行。</div>
         </div>
     </div>
 
-    <div class="footer-note">
+    <div class="footer-note" th:text="#{ui.doma.feature.footer}">
         Doma 动态 SQL 机制：这些都是基于 SQL 注释实现的，因此 SQL 文件仍然可以作为普通 SQL 阅读。
     </div>
 </div>
 
+<script th:inline="javascript">
+    // i18n JavaScript messages map for Doma Demo
+    const i18n = {
+        emptyResponse: /*[[#{ui.doma.results.empty.response}]]*/ "未查询到匹配记录 (Database returned empty list)",
+        errorResponse: /*[[#{ui.doma.results.error}]]*/ "获取数据时发生错误，请检查后端服务。",
+        statusUnsent: /*[[#{ui.doma.results.status.unsent}]]*/ "未发送",
+        statusSuccess: /*[[#{ui.doma.results.status.success}]]*/ "成功",
+        statusFailed: /*[[#{ui.doma.results.status.failed}]]*/ "失败"
+    };
+</script>
 <script>
     let currentDemo = 'mail';
 
@@ -739,13 +755,13 @@
             tbody.innerHTML = '';
 
             if (data.results.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">未查询到匹配记录 (Database returned empty list)</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">${i18n.emptyResponse}</td></tr>`;
             } else {
                 data.results.forEach(mail => {
                     let statusLabel = 'Unknown';
-                    if (mail.status === 0) statusLabel = '<span class="badge-status status-0">未发送</span>';
-                    else if (mail.status === 1) statusLabel = '<span class="badge-status status-1">成功</span>';
-                    else if (mail.status === 9) statusLabel = '<span class="badge-status status-9">失败</span>';
+                    if (mail.status === 0) statusLabel = `<span class="badge-status status-0">${i18n.statusUnsent}</span>`;
+                    else if (mail.status === 1) statusLabel = `<span class="badge-status status-1">${i18n.statusSuccess}</span>`;
+                    else if (mail.status === 9) statusLabel = `<span class="badge-status status-9">${i18n.statusFailed}</span>`;
 
                     tbody.innerHTML += `
                         <tr>
@@ -763,7 +779,7 @@
             console.error('Error fetching dynamic sql query:', error);
             document.getElementById('sql-raw').innerText = 'ERROR: Unable to retrieve raw SQL.';
             document.getElementById('sql-formatted').innerText = 'ERROR: Unable to retrieve formatted SQL.';
-            document.getElementById('results-tbody').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">获取数据时发生错误，请检查后端服务。</td></tr>`;
+            document.getElementById('results-tbody').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">${i18n.errorResponse}</td></tr>`;
         }
     }
 
