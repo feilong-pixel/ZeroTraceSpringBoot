@@ -1,4 +1,4 @@
-# ZeroTraceSpringBoot 邮件发送示例系统
+# ZeroTraceSpringBoot 邮件发送示例系统 — Spring Boot 并发与异步任务综合演示系统
 
 本工程是一个基于 **Spring Boot** 的技术示例系统。通过该项目，您可以直观地了解并对比 **Spring Batch 批处理**、**RabbitMQ 异步队列**、**ThreadPool 线程池并发** 以及 **Spring Task Scheduler 定时补偿** 等多种并发和异步任务处理模式，展示在轻量级 **SQLite 数据库** 环境下如何进行事务与连接管理。
 
