@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">编辑邮件</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090714 0%, #110c26 50%, #07050f 100%);
+            --card-bg: rgba(18, 14, 38, 0.65);
+            --card-border: rgba(255, 255, 255, 0.07);
+            --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+            --primary-glow: rgba(99, 102, 241, 0.45);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --input-bg: rgba(10, 7, 24, 0.55);
+            --input-border: rgba(255, 255, 255, 0.08);
+            --input-focus-border: #6366f1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            z-index: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .header {
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1.25rem;
+        }
+
+        .header h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 表单控件 */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            padding: 0.75rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* 操作按钮 */
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            border-top: 1px solid var(--card-border);
+            padding-top: 1.5rem;
+        }
+
+        .btn {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px var(--primary-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid var(--input-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+        }
+
+        .badge-hint {
+            font-size: 0.75rem;
+            color: #a5b4fc;
+            margin-top: 0.35rem;
+            font-family: monospace;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2 th:text="${title}">编辑邮件 (Edit Mail)</h2>
+    </div>
+
+    <!-- 知识点 4：Form 绑定 -->
+    <!-- th:object 指定绑定的后台模型对象，th:action 指定表单提交的后台接口地址 -->
+    <form th:action="@{/demo/thymeleaf/save}" th:object="${mail}" method="post">
+        <!-- 隐藏的主键字段，用于识别新增（ID为null）还是修改（ID已有） -->
+        <input type="hidden" th:field="*{mailId}" />
+
+        <!-- 姓名输入项 -->
+        <div class="form-group">
+            <label for="toName">收件人姓名 (toName)</label>
+            <input type="text" th:field="*{toName}" placeholder="输入收件人显示姓名，如: 张三" required />
+            <div class="badge-hint">绑于 th:field="*{toName}"</div>
+        </div>
+
+        <!-- 邮箱输入项 -->
+        <div class="form-group">
+            <label for="toEmail">电子邮箱地址 (toEmail)</label>
+            <input type="email" th:field="*{toEmail}" placeholder="输入电子邮箱，如: user@example.com" required />
+            <div class="badge-hint">绑于 th:field="*{toEmail}"</div>
+        </div>
+
+        <!-- 主题输入项 -->
+        <div class="form-group">
+            <label for="subject">邮件主题 (subject)</label>
+            <!-- 字段绑定 th:field="*{subject}" 自动完成 name, id, value 的装配 -->
+            <input type="text" th:field="*{subject}" placeholder="输入邮件主题" required />
+            <div class="badge-hint">绑于 th:field="*{subject}"</div>
+        </div>
+
+        <!-- 状态选择 -->
+        <div class="form-group">
+            <label for="status">发送状态 (status)</label>
+            <select th:field="*{status}">
+                <option value="0">0 - 未发送 (Unsent)</option>
+                <option value="1">1 - 发送成功 (Success)</option>
+                <option value="9">9 - 发送失败 (Failed)</option>
+            </select>
+            <div class="badge-hint">绑于 th:field="*{status}"</div>
+        </div>
+
+        <!-- 正文输入项 -->
+        <div class="form-group">
+            <label for="content">邮件正文 (content)</label>
+            <textarea th:field="*{content}" placeholder="支持 HTML 或普通文本正文..."></textarea>
+            <div class="badge-hint">绑于 th:field="*{content}"</div>
+        </div>
+
+        <!-- 表单按钮 -->
+        <div class="form-actions">
+            <!-- 链接 th:href 返回列表 -->
+            <a th:href="@{/demo/thymeleaf}" class="btn btn-secondary">取消 (Cancel)</a>
+            <button type="submit" class="btn btn-primary">保存记录 (Save)</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

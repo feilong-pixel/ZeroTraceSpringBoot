@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZeroTrace SMTP 邮件发送中心</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #090714 0%, #110c26 50%, #07050f 100%);
@@ -194,15 +197,31 @@
         }
 
         @keyframes pulse-warn {
-            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            }
         }
 
         @keyframes pulse-success {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
         }
 
         /* 右侧邮件写信表单 */
@@ -317,7 +336,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* 气泡消息提示 Toast */
@@ -404,6 +425,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -437,9 +459,10 @@
             </div>
 
             <div class="config-bottom">
-                <div th:class="${debugFlag == '0'} ? 'status-badge simulation' : 'status-badge real'">
+                <div th:class="${debugFlag == '1'} ? 'status-badge simulation' : 'status-badge real'">
                     <span class="status-dot"></span>
-                    <span th:text="${debugFlag == '0'} ? '拦截测试模式 (Simulation)' : '真实发送模式 (SMTP Live)'">拦截测试模式 (Simulation)</span>
+                    <span th:text="${debugFlag == '1'} ? '拦截测试模式 (Simulation)' : '真实发送模式 (SMTP Live)'">拦截测试模式
+                        (Simulation)</span>
                 </div>
             </div>
         </aside>
@@ -459,18 +482,21 @@
                     </div>
                     <div class="form-group">
                         <label for="toMailAddress">收件人邮箱 *</label>
-                        <input type="email" id="toMailAddress" class="form-control" placeholder="recipient@example.com" required autocomplete="off">
+                        <input type="email" id="toMailAddress" class="form-control" placeholder="recipient@example.com"
+                            required autocomplete="off">
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="subject">邮件主题 *</label>
-                    <input type="text" id="subject" class="form-control" placeholder="请输入邮件标题主题" required autocomplete="off">
+                    <input type="text" id="subject" class="form-control" placeholder="请输入邮件标题主题" required
+                        autocomplete="off">
                 </div>
 
                 <div class="form-group">
                     <label for="textContent">邮件内容 (HTML) *</label>
-                    <textarea id="textContent" class="form-control" placeholder="可以使用 <h1> <a> <p> 等 HTML 标签包裹您的内容" required></textarea>
+                    <textarea id="textContent" class="form-control" placeholder="可以使用 <h1> <a> <p> 等 HTML 标签包裹您的内容"
+                        required></textarea>
                 </div>
 
                 <button type="submit" id="btnSubmit" class="btn-submit">
@@ -488,14 +514,14 @@
         // 浮动通知逻辑
         function showToast(title, message, type = 'success') {
             const container = document.getElementById('toastContainer');
-            
+
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            
+
             let icon = '⚡';
             if (type === 'success') icon = '✓';
             if (type === 'error') icon = '✗';
-            
+
             toast.innerHTML = `
                 <div class="toast-icon">${icon}</div>
                 <div class="toast-body">
@@ -503,14 +529,14 @@
                     <div class="toast-msg">${message}</div>
                 </div>
             `;
-            
+
             container.appendChild(toast);
-            
+
             // 触发进入过渡
             setTimeout(() => {
                 toast.classList.add('show');
             }, 50);
-            
+
             // 4秒后自动移除
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -578,4 +604,5 @@
         }
     </script>
 </body>
+
 </html>

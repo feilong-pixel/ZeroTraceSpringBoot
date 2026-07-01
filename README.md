@@ -1,6 +1,6 @@
-# ZeroTraceSpringBoot 邮件发送示例系统 — Spring Boot 并发与异步任务综合演示系统
+# ZeroTraceSpringBoot Spring Boot 并发与异步任务综合演示系统
 
-本工程是一个基于 **Spring Boot** 的技术示例系统。通过该项目，您可以直观地了解并对比 **Spring Batch 批处理**、**RabbitMQ 异步队列**、**ThreadPool 线程池并发** 以及 **Spring Task Scheduler 定时补偿** 等多种并发和异步任务处理模式，展示在轻量级 **SQLite 数据库** 环境下如何进行事务与连接管理。
+本工程是一个基于 **Spring Boot** 的技术示例系统。通过该项目，您可以直观地了解并对比 **Spring Batch 批处理**、**Embedded ActiveMQ Artemis 异步队列**、**ThreadPool 线程池并发** 以及 **Spring Task Scheduler 定时补偿** 等多种并发和异步任务处理模式，展示在轻量级 **SQLite 数据库** 环境下如何进行事务与连接管理。
 
 ---
 
@@ -9,7 +9,7 @@
 - **框架核心**：Spring Boot 3.x, Spring MVC, Spring AOP
 - **异步与并发管理**：
   - **Spring Batch**：实现批处理任务的流程演示
-  - **Spring AMQP (RabbitMQ)**：实现异步消息削峰和重试投递逻辑演示
+  - **Spring JMS (ActiveMQ Artemis)**：实现嵌入式异步消息削峰和重试投递逻辑演示
   - **Spring TaskExecutor**：使用自定义线程池演示本地的并发发送与拒绝策略处理
   - **Spring Task Scheduler**：基于 Cron 表达式在指定时间窗口内执行定时重试扫描
 - **持久层**：**Doma 2** (类型安全的 Java SQL 框架)，保证 SQL 语句与 Java 代码清晰隔离
@@ -23,8 +23,8 @@
 - **流程**：利用 `Reader` 读取待发送邮件，`Processor` 统一组装发送，`Writer` 对每封邮件以独立的短事务更新状态并记录发送日志。
 - **触发**：支持从外部命令行（非 Web 容器生命周期内）传入特定 Job 参数触发执行，适合例行批处理作业演示。
 
-### 2. 场景二：RabbitMQ 异步队列与重试补偿
-- **流程**：当 API 接收到发送请求，首先将邮件写入 SQLite，并将 `mail_id` 推送至 RabbitMQ。监听器消费消息时调用 SMTP 客户端发送。
+### 2. 场景二：ActiveMQ Artemis 异步队列与重试补偿
+- **流程**：当 API 接收到发送请求，首先将邮件写入 SQLite，并将 `mail_id` 推送至 ActiveMQ Artemis。监听器消费消息时调用 SMTP 客户端发送。
 - **重试**：如遇发送失败或网络异常，系统将捕获异常并增加重试计数，状态变更为 `FAILED` (9)，并记录发送日志，后续由场景四进行后台重试。
 
 ### 3. 场景三：Spring 线程池并发投递与溢出保护

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thymeleaf 极简入门示例</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090714 0%, #110c26 50%, #07050f 100%);
+            --card-bg: rgba(18, 14, 38, 0.65);
+            --card-border: rgba(255, 255, 255, 0.07);
+            --primary-gradient: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+            --primary-glow: rgba(99, 102, 241, 0.45);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --input-bg: rgba(10, 7, 24, 0.55);
+            --input-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            z-index: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .header {
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title-group h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* 知识点 1：普通文本显示容器 */
+        .message-box {
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px dashed rgba(99, 102, 241, 0.25);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            color: #c7d2fe;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* 知识点 7：th:block 语法演示栏 */
+        .login-banner {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .login-status-btn {
+            font-size: 0.75rem;
+            color: #6366f1;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .login-status-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* CRUD 控件 */
+        .crud-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 0.65rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px var(--primary-glow);
+        }
+
+        .btn-edit {
+            background: rgba(99, 102, 241, 0.15);
+            color: #c7d2fe;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-edit:hover {
+            background: rgba(99, 102, 241, 0.25);
+            color: white;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: white;
+        }
+
+        /* 列表表格 */
+        .table-wrapper {
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(18, 14, 38, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 1rem;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* 状态标识 */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-0 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .status-1 { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .status-other { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+        .back-home {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 1rem;
+            transition: color 0.3s;
+        }
+
+        .back-home:hover {
+            color: #a5b4fc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 头部栏 -->
+    <div class="header">
+        <div class="title-group">
+            <h1>Spring Boot + Thymeleaf 最小入门示例</h1>
+            <div class="demo-desc">通过最小的核心语法，掌握模板的显示、循环、表单、跳转与条件分支</div>
+        </div>
+    </div>
+
+    <!-- 知识点 1：显示普通数据 -->
+    <div class="message-box">
+        <strong>[th:text 示例]</strong><br/>
+        <span th:text="${message}">这里是用于被替换的占位符文本</span>
+    </div>
+
+    <!-- 知识点 7：非侵入式块 conditional (th:block th:if) -->
+    <!-- th:block 不会产生多余的 HTML 标记，只起到了容器作用 -->
+    <th:block th:if="${login}">
+        <div class="login-banner">
+            <span>👤 已启用演示环境管理员权限 (演示 th:block th:if 条件显示)</span>
+            <a class="login-status-btn" th:href="@{/demo/thymeleaf(login=false)}">模拟登出</a>
+        </div>
+    </th:block>
+    <th:block th:if="${!login}">
+        <div class="login-banner" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
+            <span>⚠️ 当前为匿名游客视图 (演示 th:block th:if)</span>
+            <a class="login-status-btn" th:href="@{/demo/thymeleaf(login=true)}" style="color: #f87171;">模拟登录</a>
+        </div>
+    </th:block>
+
+    <!-- 操作区 -->
+    <div class="crud-actions">
+        <h3>邮件模拟数据库</h3>
+        <!-- 知识点 5：URL 表达式 th:href -->
+        <a th:href="@{/demo/thymeleaf/new}" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            新增邮件记录 (Create)
+        </a>
+    </div>
+
+    <!-- 数据列表 -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mail ID</th>
+                    <th>收件人</th>
+                    <th>邮箱地址</th>
+                    <th>邮件主题</th>
+                    <th>发送状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 知识点 2：循环遍历 List -->
+                <tr th:each="mail : ${mailList}">
+                    <td th:text="${mail.mailId}">1</td>
+                    <td th:text="${mail.toName}">张三</td>
+                    <td th:text="${mail.toEmail}">zhangsan@example.com</td>
+                    <td th:text="${mail.subject}">主题</td>
+                    <td>
+                        <!-- 知识点 3：条件显示 th:if -->
+                        <div th:if="${mail.status == 0}" class="badge status-0">
+                            未发送
+                        </div>
+                        <div th:if="${mail.status == 1}" class="badge status-1">
+                            发送成功
+                        </div>
+                        <div th:if="${mail.status != 0 && mail.status != 1}" class="badge status-other">
+                            发送失败
+                        </div>
+                    </td>
+                    <td>
+                        <!-- 知识点 5：URL 表达式动态参数绑定 -->
+                        <a th:href="@{/demo/thymeleaf/edit/{id}(id=${mail.mailId})}" class="btn btn-edit" style="margin-right: 0.25rem;">编辑</a>
+                        <a th:href="@{/demo/thymeleaf/delete/{id}(id=${mail.mailId})}" class="btn btn-delete">删除</a>
+                    </td>
+                </tr>
+                <tr th:if="${mailList.isEmpty()}">
+                    <td colspan="6" style="text-align: center; color: var(--text-muted);">暂无任何邮件记录。</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <a href="/" class="back-home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        返回主页
+    </a>
+</div>
+
+</body>
+</html>

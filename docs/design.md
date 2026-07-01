@@ -1,6 +1,6 @@
 # ZeroTraceSpringBoot 邮件发送示例系统设计与需求说明书
 
-本工程是一个基于 Spring Boot 的示例项目，旨在演示 **Spring Batch (批处理)**、**Spring AMQP (消息队列)**、**Spring Async (线程池)**、**Spring Task Scheduler (计划任务)** 以及 **SQLite 数据库** 的集成与应用。
+本工程是一个基于 Spring Boot 的示例项目，旨在演示 **Spring Batch (批处理)**、**Spring JMS (消息队列)**、**Spring Async (线程池)**、**Spring Task Scheduler (计划任务)** 以及 **SQLite 数据库** 的集成与应用。
 
 项目核心业务场景为：**邮件发送示例系统**。通过多种模式（队列、线程池、批处理、定时轮询）演示邮件发送流程，并展示不同架构下的技术差异。
 
@@ -8,12 +8,12 @@
 
 ## 一、 系统架构与关键技术对比
 
-### 1. 消息队列 (Spring AMQP) vs 线程池 (Spring Executor)
+### 1. 消息队列 (Spring JMS) vs 线程池 (Spring Executor)
 本系统的一大设计目标是对比**消息队列**与**内存线程池**在处理并发与异常时的机制表现：
 
-| 特性维度 | 消息队列 (Spring AMQP / RabbitMQ) | 线程池 (Spring TaskExecutor) |
+| 特性维度 | 消息队列 (Spring JMS / ActiveMQ Artemis) | 线程池 (Spring TaskExecutor) |
 | :--- | :--- | :--- |
-| **内存溢出时的消息持久性** | 即使队列溢出或服务宕机，AMQP 代理（如 RabbitMQ）支持消息持久化。 | 若内存队列（如 `LinkedBlockingQueue`）溢出或应用宕机，内存中的待处理邮件任务将丢失。 |
+| **内存溢出时的消息持久性** | 即使队列溢出或服务宕机，嵌入式消息队列代理（如 ActiveMQ Artemis）支持消息持久化。 | 若内存队列（如 `LinkedBlockingQueue`）溢出或应用宕机，内存中的待处理邮件任务将丢失。 |
 | **高并发限流/削峰** | 消费者根据自身消费能力拉取或推送消息，天然起到削峰填谷的作用。 | 通过调整线程池的核心线程数、最大线程数和阻塞队列大小进行限流。 |
 | **错误恢复与重试机制** | **结合数据库实现**：当队列消费失败或发送超时，将异常邮件记录写入 SQLite 数据库，由后台定时任务进行补偿和重新发送。 | **数据库补偿**：将邮件在发送前持久化至数据库。当线程池任务执行失败时，通过轮询数据库重新提交任务。 |
 
@@ -100,10 +100,10 @@ CREATE INDEX IF NOT EXISTS idx_mail_info_status ON mail_info(status, retry_count
     2.  支持从外部命令行（非 Web 容器生命周期内）传入特定 Job 参数并调用该批处理。
     3.  适用于每天/每小时的例行批处理作业演示。
 
-### 场景 2：使用 Spring 消息队列 (AMQP / RabbitMQ) 与重试补偿
-*   **需求目标**：演示基于 AMQP 消息队列发送邮件，并结合数据库设计实现重试补偿效果。
+### 场景 2：使用 Spring 消息队列 (JMS / Embedded ActiveMQ Artemis) 与重试补偿
+*   **需求目标**：演示基于 JMS 消息队列（嵌入式 ActiveMQ Artemis）发送邮件，并结合数据库设计实现重试补偿效果。
 *   **具体流程**：
-    1.  当系统收到发送邮件的 API 请求时，先将邮件写入 `mail_info` 数据库，并将 `mail_id` 作为消息发布至 RabbitMQ 队列。
+    1.  当系统收到发送邮件的 API 请求时，先将邮件写入 `mail_info` 数据库，并将 `mail_id` 作为消息发布至 ActiveMQ Artemis 队列。
     2.  监听器消费消息，读取 `mail_info` 并通过 `SmtpClient` 发送邮件。
     3.  若发送成功，更新状态为 `1` 并记录成功日志。
     4.  若发送失败或队列溢出导致消费异常，则捕获该异常，递增 `retry_count`，记录失败日志并将状态标为 `9`。由后续定时任务（场景 4）负责从数据库捞起失败记录重新发送。

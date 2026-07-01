@@ -1,6 +1,6 @@
-# 场景 2 入门指南：使用 Spring 消息队列 (AMQP / RabbitMQ) 与重试补偿
+# 场景 2 入门指南：使用 Spring 消息队列 (JMS / Embedded ActiveMQ Artemis) 与重试补偿
 
-本指南旨在向您详细解释和说明 **场景 2：使用 Spring 消息队列 (AMQP / RabbitMQ) 与重试补偿** 的设计、架构及执行逻辑，帮助您快速理解本工程中消息队列模式下的邮件发送逻辑。
+本指南旨在向您详细解释和说明 **场景 2：使用 Spring 消息队列 (JMS / Embedded ActiveMQ Artemis) 与重试补偿** 的设计、架构及执行逻辑，帮助您快速理解本工程中消息队列模式下的邮件发送逻辑。
 
 ---
 
@@ -8,7 +8,7 @@
 
 在企业级应用中，直接在 Web 请求中同步发送邮件会极大地阻塞用户线程（因为与外部 SMTP 服务器建立 TCP 连接和握手可能需要数秒时间）。
 **场景 2** 演示了如何将同步发送转为**异步队列处理**：
-1. Web 接口接收请求后，仅将邮件元数据保存至本地 SQLite 数据库，并向 **RabbitMQ** 推送一条只含有“邮件 ID”的消息，随即立刻向用户返回“已提交”的成功响应。
+1. Web 接口接收请求后，仅将邮件元数据保存至本地 SQLite 数据库，并向 **ActiveMQ Artemis** 推送一条只含有“邮件 ID”的消息，随即立刻向用户返回“已提交”的成功响应。
 2. 消费者线程在后台从队列中拉取邮件 ID，加载数据并通过 SMTP 客户端完成实际的邮件发送。
 3. **重试补偿设计**：如果消费者发送邮件时网络闪断或服务器超时导致失败，系统不会丢弃该邮件，而是更新其重试次数并标记为失败状态（`status` = 9）。在后台，定时器（场景 4）会扫描这些记录并在允许的时间段内发起重试。这样即便系统或队列出现瞬时崩溃，邮件记录也能做到防丢失，实现可靠重试。
 
@@ -16,12 +16,11 @@
 
 ## 🏗️ 2. 队列配置与核心组件
 
-在 [MqConfig.java](../src/main/java/com/feilonglab/springboot/web/mq/sendmail/MqConfig.java) 中，我们定义了 RabbitMQ 相关的基础 Bean：
+在 [MqConfig.java](../src/main/java/com/feilonglab/springboot/web/mq/sendmail/MqConfig.java) 中，我们配置了 ActiveMQ Artemis 相关的连接和消费工厂：
 
-- **邮件队列 (`mailQueue`)**：声明了一个名为 `mail.queue` 的持久化队列，支持在配置文件中设置队列的最大长度（`x-max-length`）与溢出策略（`x-overflow`）。
-- **主题交换机 (`mailExchange`)**：声明了一个名为 `mail.exchange` 的 Topic 交换机。
-- **绑定规则 (`mailBinding`)**：将队列通过路由键 `mail.routing.key` 绑定到交换机。
-- **并发消费者配置 (`rabbitListenerContainerFactory`)**：配置了监听器容器的并发消费者线程数（最小 1，最大 5）。
+JMS 队列的目的地（Destination）在发送和消费时会按名字（如 `mail.queue`）被自动创建，不再需要显式定义 Queue、Exchange 和 Binding。
+
+- **并发消费者配置 (`jmsListenerContainerFactory`)**：配置了监听器容器的并发消费者线程范围为 `1-5`。
 
 ---
 
@@ -36,7 +35,7 @@ sequenceDiagram
     participant Controller as MqSendMailController
     participant Service as MqSendMailService
     participant DB as "SQLite (mail_info)"
-    participant MQ as "RabbitMQ (mail.queue)"
+    participant MQ as "ActiveMQ Artemis (mail.queue)"
 
     User->>Controller: POST /mq/sendmail (MailRequest)
     Controller->>Service: sendMailAsync(request)
@@ -48,7 +47,7 @@ sequenceDiagram
     Controller-->>User: HTTP 200 (邮件已推入队列)
 
     note over Service, MQ: 消费者异步提取消息...
-    MQ->>Service: @RabbitListener 触发 consumeMailMessage(mailId)
+    MQ->>Service: @JmsListener 触发 consumeMailMessage(mailId)
     activate Service
     Service->>DB: selectById(mailId)
     Service->>Service: 校验状态 (若已发送成功则跳过)
@@ -64,10 +63,10 @@ sequenceDiagram
 ### 1) 接收与推入阶段 (`sendMailAsync`)
 当用户调用 `POST /mq/sendmail` 接口：
 1. 事务方法 `sendMailAsync` 将请求数据封装为 `MailInfo`，设置状态为 `PENDING` (0)，重试次数为 `0`，并执行 `mailInfoDao.insert(mailInfo)` 写入数据库。
-2. 随后，使用 `rabbitTemplate.convertAndSend` 将新生成的 `mailId` 推送到 RabbitMQ 队列中。
+2. 随后，使用 `jmsTemplate.convertAndSend` 将新生成的 `mailId` 推送到 ActiveMQ Artemis 队列中。
 
 ### 2) 异步消费与投递阶段 (`consumeMailMessage`)
-1. 方法带有 `@RabbitListener(queues = "${mail.queue:mail.queue}")` 注解，只要队列有消息，就会被唤醒执行。
+1. 方法带有 `@JmsListener(destination = "${mail.queue:mail.queue}", containerFactory = "jmsListenerContainerFactory")` 注解，只要队列有消息，就会被唤醒执行。
 2. 消费者根据 `mailId` 从 SQLite 中检索出完整的邮件数据。
 3. 检查状态：如果该邮件之前已发送成功，则直接忽略，防止因消息重复投递导致用户重复收到多封相同邮件（幂等性设计）。
 4. 通过 SMTP 客户端向目标邮箱进行投递。

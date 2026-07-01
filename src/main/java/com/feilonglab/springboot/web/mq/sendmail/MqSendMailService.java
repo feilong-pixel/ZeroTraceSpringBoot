@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,13 +33,9 @@ import com.feilonglab.springboot.util.MessageUtils;
 @PropertySource("classpath:mq.properties")
 public class MqSendMailService {
 
-    /** 邮件交换机名称 */
-    @Value("${mail.exchange:mail.exchange}")
-    private String exchangeName;
-
-    /** 邮件路由键 */
-    @Value("${mail.routing.key:mail.routing.key}")
-    private String routingKey;
+    /** 邮件队列名称 */
+    @Value("${mail.queue:mail.queue}")
+    private String queueName;
 
     /** 日志记录器 */
     private static final Logger logger = LoggerFactory.getLogger(MqSendMailService.class);
@@ -52,9 +48,9 @@ public class MqSendMailService {
     @Autowired
     private MailSendLogDao mailSendLogDao;
 
-    /** RabbitTemplate */
+    /** JmsTemplate */
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private JmsTemplate jmsTemplate;
 
     /** 自我注入，用于事务传播切换 */
     @Autowired
@@ -87,9 +83,9 @@ public class MqSendMailService {
         mailInfoDao.insert(mailInfo);
         Long mailId = mailInfo.getMailId();
 
-        // 2. 发送 mailId 到 RabbitMQ 队列
-        logger.info("邮件已持久化，ID: {}, 准备发布至 MQ 队列.", mailId);
-        rabbitTemplate.convertAndSend(exchangeName, routingKey, mailId);
+        // 2. 发送 mailId 到 JMS 队列
+        logger.info("邮件已持久化，ID: {}, 准备发布至 JMS 队列.", mailId);
+        jmsTemplate.convertAndSend(queueName, mailId);
 
         return mailId;
     }
@@ -99,7 +95,7 @@ public class MqSendMailService {
      *
      * @param mailId 邮件ID
      */
-    @RabbitListener(queues = "${mail.queue:mail.queue}")
+    @JmsListener(destination = "${mail.queue:mail.queue}", containerFactory = "jmsListenerContainerFactory")
     public void consumeMailMessage(Long mailId) {
         logger.info("从 MQ 队列接收到邮件发送任务，邮件 ID: {}", mailId);
 
