@@ -128,3 +128,31 @@ CREATE INDEX IF NOT EXISTS idx_mail_info_status ON mail_info(status, retry_count
 *   **具体流程**：
     1.  多线程或多进程并发操作同一 SQLite 文件时，避免在单个大事务中合并处理所有邮件，否则会引发 `SQLITE_BUSY` 异常。
     2.  **设计要求**：采用**单个独立事务处理一封邮件**的粒度。每封邮件在读取、执行发送、修改状态及写入日志的过程都必须归属于它自己独立的短事务（`Propagation.REQUIRES_NEW`），确保快速释放文件锁，最大化并发能力。
+
+---
+
+## 四、 SmtpClient 属性配置加载的三种实现方式
+
+为了演示 Java 经典环境与 Spring 环境下的不同开发习惯，本工程在各场景的 `SmtpClient` 中演示了三种不同的 Properties 属性配置文件读取方式：
+
+### 1. 方式一：Java 经典 Properties 加载（适用于非 Spring POJO）
+- **代表类**：[basic/SmtpClient.java](../src/main/java/com/feilonglab/smtp/basic/SmtpClient.java)
+- **原理**：使用 JDK 原生的 `java.util.Properties`，通过当前类的 ClassLoader 以流（Stream）的方式加载类路径下的文件：
+  ```java
+  Properties props = new Properties();
+  try (InputStream in = SmtpClient.class.getResourceAsStream("/mail.properties")) {
+      props.load(in);
+  }
+  ```
+- **特点**：完全独立于 Spring 容器，可在任何普通的 Java SE 应用程序中运行，移植性高。
+
+### 2. 方式二：ResourceBundle 绑定读取（适用于经典 Java 国际化与资源绑定）
+- **代表类**：[mq/SmtpClient.java](../src/main/java/com/feilonglab/smtp/mq/SmtpClient.java)
+- **原理**：利用 `java.util.ResourceBundle.getBundle("mail")` 在无参构造函数中拉取类路径下的属性映射作为非容器环境下的备份手段。
+- **特点**：经典的 Java 资源读取方式，通常用于国际化资源处理，可在不依赖 Spring 容器的普通 Java 环境下依然能够良好运行。
+
+### 3. 方式三：Spring 声明式注解注入（适用于 Spring 容器管理组件）
+- **代表类**：[threadpool/SmtpClient.java](../src/main/java/com/feilonglab/smtp/threadpool/SmtpClient.java)、[scheduler/SmtpClient.java](../src/main/java/com/feilonglab/smtp/scheduler/SmtpClient.java)
+- **原理**：在类上添加 `@Component` 和 `@PropertySource("classpath:mail.properties")`，使属性合并进 Spring `Environment` 中，字段使用 `@Value("${mail.smtp.host}")` 声明式地让容器在初始化 Bean 时自动注入。
+- **特点**：Spring 体系下标准的属性管理模式，能够天然融入 Spring Configuration 并配合 Prototype Scope 动态管理生命周期。
+
