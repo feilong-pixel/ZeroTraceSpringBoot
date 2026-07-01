@@ -59,6 +59,9 @@
         .header {
             border-bottom: 1px solid var(--card-border);
             padding-bottom: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header h2 {
@@ -166,6 +169,11 @@
 <div class="container">
     <div class="header">
         <h2 th:text="${title}">编辑邮件 (Edit Mail)</h2>
+        <div class="lang-switch-wrapper" style="display: flex; gap: 0.5rem; font-size: 0.85rem; align-items: center;">
+            <a href="?lang=zh_CN" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'zh'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.chinese}">中文</a>
+            <span style="color: var(--card-border);">|</span>
+            <a href="?lang=en_US" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'en'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.english}">English</a>
+        </div>
     </div>
 
     <!-- 知识点 4：Form 绑定 -->
@@ -176,49 +184,49 @@
 
         <!-- 姓名输入项 -->
         <div class="form-group">
-            <label for="toName">收件人姓名 (toName)</label>
-            <input type="text" th:field="*{toName}" placeholder="输入收件人显示姓名，如: 张三" required />
-            <div class="badge-hint">绑于 th:field="*{toName}"</div>
+            <label for="toName" th:text="#{ui.form.to.name}">收件人姓名 (toName)</label>
+            <input type="text" th:field="*{toName}" th:placeholder="#{ui.form.to.name.placeholder}" required />
+            <div class="badge-hint" th:text="#{ui.form.hint.to.name}">绑于 th:field="*{toName}"</div>
         </div>
 
         <!-- 邮箱输入项 -->
         <div class="form-group">
-            <label for="toEmail">电子邮箱地址 (toEmail)</label>
-            <input type="email" th:field="*{toEmail}" placeholder="输入电子邮箱，如: user@example.com" required />
-            <div class="badge-hint">绑于 th:field="*{toEmail}"</div>
+            <label for="toEmail" th:text="#{ui.form.to.email}">电子邮箱地址 (toEmail)</label>
+            <input type="email" th:field="*{toEmail}" th:placeholder="#{ui.form.to.email.placeholder}" required />
+            <div class="badge-hint" th:text="#{ui.form.hint.to.email}">绑于 th:field="*{toEmail}"</div>
         </div>
 
         <!-- 主题输入项 -->
         <div class="form-group">
-            <label for="subject">邮件主题 (subject)</label>
+            <label for="subject" th:text="#{ui.form.subject}">邮件主题 (subject)</label>
             <!-- 字段绑定 th:field="*{subject}" 自动完成 name, id, value 的装配 -->
-            <input type="text" th:field="*{subject}" placeholder="输入邮件主题" required />
-            <div class="badge-hint">绑于 th:field="*{subject}"</div>
+            <input type="text" th:field="*{subject}" th:placeholder="#{ui.form.subject.placeholder}" required />
+            <div class="badge-hint" th:text="#{ui.form.hint.subject}">绑于 th:field="*{subject}"</div>
         </div>
 
         <!-- 状态选择 -->
         <div class="form-group">
-            <label for="status">发送状态 (status)</label>
+            <label for="status" th:text="#{ui.form.status}">发送状态 (status)</label>
             <select th:field="*{status}">
-                <option value="0">0 - 未发送 (Unsent)</option>
-                <option value="1">1 - 发送成功 (Success)</option>
-                <option value="9">9 - 发送失败 (Failed)</option>
+                <option value="0" th:text="#{ui.form.status.unsent}">0 - 未发送 (Unsent)</option>
+                <option value="1" th:text="#{ui.form.status.success}">1 - 发送成功 (Success)</option>
+                <option value="9" th:text="#{ui.form.status.failed}">9 - 发送失败 (Failed)</option>
             </select>
-            <div class="badge-hint">绑于 th:field="*{status}"</div>
+            <div class="badge-hint" th:text="#{ui.form.hint.status}">绑于 th:field="*{status}"</div>
         </div>
 
         <!-- 正文输入项 -->
         <div class="form-group">
-            <label for="content">邮件正文 (content)</label>
-            <textarea th:field="*{content}" placeholder="支持 HTML 或普通文本正文..."></textarea>
-            <div class="badge-hint">绑于 th:field="*{content}"</div>
+            <label for="content" th:text="#{ui.form.content}">邮件正文 (content)</label>
+            <textarea th:field="*{content}" th:placeholder="#{ui.form.content.placeholder}"></textarea>
+            <div class="badge-hint" th:text="#{ui.form.hint.content}">绑于 th:field="*{content}"</div>
         </div>
 
         <!-- 表单按钮 -->
         <div class="form-actions">
             <!-- 链接 th:href 返回列表 -->
-            <a th:href="@{/demo/thymeleaf}" class="btn btn-secondary">取消 (Cancel)</a>
-            <button type="submit" class="btn btn-primary">保存记录 (Save)</button>
+            <a th:href="@{/demo/thymeleaf}" class="btn btn-secondary" th:text="#{ui.form.btn.cancel}">取消 (Cancel)</a>
+            <button type="submit" class="btn btn-primary" th:text="#{ui.form.btn.save}">保存记录 (Save)</button>
         </div>
     </form>
 </div>

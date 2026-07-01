@@ -456,6 +456,8 @@
                         <span class="config-value" th:text="${smtpSenderName}">Fei Long Lab</span>
                     </li>
                 </ul>
+
+
             </div>
 
             <div class="config-bottom">
@@ -473,6 +475,29 @@
 
         <!-- 右侧：邮件发送表单 -->
         <main class="mail-form-section">
+            <!-- 顶部导航链接 -->
+            <div class="top-nav-bar" style="display: flex; justify-content: flex-end; gap: 1rem; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--card-border); padding-bottom: 1rem;">
+                <a th:href="@{/demo/thymeleaf}" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: color 0.3s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span th:text="#{ui.index.sidebar.nav.thymeleaf}">Thymeleaf Core Demo</span>
+                </a>
+                <span style="color: var(--card-border);">|</span>
+                <a th:href="@{/demo/doma}" style="color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: color 0.3s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                        <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path>
+                    </svg>
+                    <span th:text="#{ui.index.sidebar.nav.doma}">Doma Dynamic SQL Demo</span>
+                </a>
+            </div>
+
             <div class="form-header">
                 <h2 th:text="#{ui.index.form.title}">Send New Email</h2>
                 <p th:text="#{ui.index.form.subtitle}">Supports plain text or HTML formatted rich-text emails.</p>

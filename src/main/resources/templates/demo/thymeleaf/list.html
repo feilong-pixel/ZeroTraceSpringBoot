@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thymeleaf 极简入门示例</title>
+    <title th:text="#{ui.list.page.title}">Thymeleaf 极简入门示例</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -248,14 +248,19 @@
     <!-- 头部栏 -->
     <div class="header">
         <div class="title-group">
-            <h1>Spring Boot + Thymeleaf 最小入门示例</h1>
-            <div class="demo-desc">通过最小的核心语法，掌握模板的显示、循环、表单、跳转与条件分支</div>
+            <h1 th:text="#{ui.list.title}">Spring Boot + Thymeleaf 极简入门示例</h1>
+            <div class="demo-desc" th:text="#{ui.list.subtitle}">通过最小的核心语法，掌握模板的显示、循环、表单、跳转与条件分支</div>
+        </div>
+        <div class="lang-switch-wrapper" style="display: flex; gap: 0.5rem; font-size: 0.85rem; align-items: center;">
+            <a href="?lang=zh_CN" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'zh'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.chinese}">中文</a>
+            <span style="color: var(--card-border);">|</span>
+            <a href="?lang=en_US" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'en'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.english}">English</a>
         </div>
     </div>
 
     <!-- 知识点 1：显示普通数据 -->
     <div class="message-box">
-        <strong>[th:text 示例]</strong><br/>
+        <strong th:text="#{ui.list.text.demo}">[th:text 示例]</strong><br/>
         <span th:text="${message}">这里是用于被替换的占位符文本</span>
     </div>
 
@@ -263,27 +268,27 @@
     <!-- th:block 不会产生多余的 HTML 标记，只起到了容器作用 -->
     <th:block th:if="${login}">
         <div class="login-banner">
-            <span>👤 已启用演示环境管理员权限 (演示 th:block th:if 条件显示)</span>
-            <a class="login-status-btn" th:href="@{/demo/thymeleaf(login=false)}">模拟登出</a>
+            <span th:text="#{ui.list.admin.active}">👤 已启用演示环境管理员权限 (演示 th:block th:if 条件显示)</span>
+            <a class="login-status-btn" th:href="@{/demo/thymeleaf(login=false)}" th:text="#{ui.list.logout}">模拟登出</a>
         </div>
     </th:block>
     <th:block th:if="${!login}">
         <div class="login-banner" style="background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.2); color: #f87171;">
-            <span>⚠️ 当前为匿名游客视图 (演示 th:block th:if)</span>
-            <a class="login-status-btn" th:href="@{/demo/thymeleaf(login=true)}" style="color: #f87171;">模拟登录</a>
+            <span th:text="#{ui.list.guest.view}">⚠️ 当前为匿名游客视图 (演示 th:block th:if)</span>
+            <a class="login-status-btn" th:href="@{/demo/thymeleaf(login=true)}" style="color: #f87171;" th:text="#{ui.list.login}">模拟登录</a>
         </div>
     </th:block>
 
     <!-- 操作区 -->
     <div class="crud-actions">
-        <h3>邮件模拟数据库</h3>
+        <h3 th:text="#{ui.list.db.title}">邮件模拟数据库</h3>
         <!-- 知识点 5：URL 表达式 th:href -->
         <a th:href="@{/demo/thymeleaf/new}" class="btn btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            新增邮件记录 (Create)
+            <span th:text="#{ui.list.btn.create}">新增邮件记录 (Create)</span>
         </a>
     </div>
 
@@ -293,11 +298,11 @@
             <thead>
                 <tr>
                     <th>Mail ID</th>
-                    <th>收件人</th>
-                    <th>邮箱地址</th>
-                    <th>邮件主题</th>
-                    <th>发送状态</th>
-                    <th>操作</th>
+                    <th th:text="#{ui.list.table.recipient}">收件人</th>
+                    <th th:text="#{ui.list.table.email}">邮箱地址</th>
+                    <th th:text="#{ui.list.table.subject}">邮件主题</th>
+                    <th th:text="#{ui.list.table.status}">发送状态</th>
+                    <th th:text="#{ui.list.table.actions}">操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -309,24 +314,24 @@
                     <td th:text="${mail.subject}">主题</td>
                     <td>
                         <!-- 知识点 3：条件显示 th:if -->
-                        <div th:if="${mail.status == 0}" class="badge status-0">
+                        <div th:if="${mail.status == 0}" class="badge status-0" th:text="#{ui.list.status.unsent}">
                             未发送
                         </div>
-                        <div th:if="${mail.status == 1}" class="badge status-1">
+                        <div th:if="${mail.status == 1}" class="badge status-1" th:text="#{ui.list.status.success}">
                             发送成功
                         </div>
-                        <div th:if="${mail.status != 0 && mail.status != 1}" class="badge status-other">
+                        <div th:if="${mail.status != 0 && mail.status != 1}" class="badge status-other" th:text="#{ui.list.status.failed}">
                             发送失败
                         </div>
                     </td>
                     <td>
                         <!-- 知识点 5：URL 表达式动态参数绑定 -->
-                        <a th:href="@{/demo/thymeleaf/edit/{id}(id=${mail.mailId})}" class="btn btn-edit" style="margin-right: 0.25rem;">编辑</a>
-                        <a th:href="@{/demo/thymeleaf/delete/{id}(id=${mail.mailId})}" class="btn btn-delete">删除</a>
+                        <a th:href="@{/demo/thymeleaf/edit/{id}(id=${mail.mailId})}" class="btn btn-edit" style="margin-right: 0.25rem;" th:text="#{ui.list.action.edit}">编辑</a>
+                        <a th:href="@{/demo/thymeleaf/delete/{id}(id=${mail.mailId})}" class="btn btn-delete" th:text="#{ui.list.action.delete}">删除</a>
                     </td>
                 </tr>
                 <tr th:if="${mailList.isEmpty()}">
-                    <td colspan="6" style="text-align: center; color: var(--text-muted);">暂无任何邮件记录。</td>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted);" th:text="#{ui.list.empty}">暂无任何邮件记录。</td>
                 </tr>
             </tbody>
         </table>
@@ -336,7 +341,7 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
-        返回主页
+        <span th:text="#{ui.common.back}">返回主页</span>
     </a>
 </div>
 

@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.language}">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="#{ui.doma.title}">Doma Dynamic SQL Interactive Demo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #090714 0%, #110c26 50%, #07050f 100%);
@@ -200,7 +203,8 @@
             font-weight: 500;
         }
 
-        input, select {
+        input,
+        select {
             background: var(--input-bg);
             border: 1px solid var(--input-border);
             border-radius: 8px;
@@ -212,7 +216,8 @@
             transition: all 0.3s ease;
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             border-color: var(--input-focus-border);
             box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
@@ -304,9 +309,17 @@
             border-radius: 50%;
         }
 
-        .dot-red { background: #ef4444; }
-        .dot-yellow { background: #f59e0b; }
-        .dot-green { background: #10b981; }
+        .dot-red {
+            background: #ef4444;
+        }
+
+        .dot-yellow {
+            background: #f59e0b;
+        }
+
+        .dot-green {
+            background: #10b981;
+        }
 
         .console-title {
             font-size: 0.75rem;
@@ -422,9 +435,20 @@
             font-weight: 600;
         }
 
-        .status-0 { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-        .status-1 { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .status-9 { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .status-0 {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+
+        .status-1 {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .status-9 {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
 
         /* 特性卡片 */
         .features-container {
@@ -499,8 +523,15 @@
 
         /* 动画 */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .animate-fade {
@@ -508,262 +539,281 @@
         }
     </style>
 </head>
+
 <body>
 
-<div class="container animate-fade">
-    <!-- 左侧侧边栏 -->
-    <div class="sidebar">
-        <div class="app-title-wrapper">
-            <div class="app-logo" th:text="#{ui.doma.sidebar.logo}">ZeroTrace Doma</div>
-            <div class="app-subtitle" th:text="#{ui.doma.sidebar.subtitle}">Dynamic SQL Interactive Center</div>
-        </div>
-
-        <!-- 演示导航按钮 -->
-        <div class="demo-nav">
-            <button class="demo-btn active" onclick="switchDemo('mail', this)">
-                <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title1}">示例 1: Parameter & If</span>
-                <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc1}">参数绑定与条件判断 /*%if */</span>
-            </button>
-            <button class="demo-btn" onclick="switchDemo('in', this)">
-                <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title2}">示例 2: For Loop & IN</span>
-                <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc2}">列表循环与 IN 语句 /*%for */</span>
-            </button>
-            <button class="demo-btn" onclick="switchDemo('optional', this)">
-                <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title3}">示例 3: Optional Date</span>
-                <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc3}">可选条件的日期过滤 (sent_at)</span>
-            </button>
-        </div>
-
-        <!-- 参数控制区 -->
-        <div class="params-panel">
-            <div class="panel-title" th:text="#{ui.doma.sidebar.params.title}">Query Parameters</div>
-
-            <!-- Form 1: Mail Search -->
-            <div id="form-mail" class="param-form active">
-                <div class="form-group">
-                    <label for="mail-status" th:text="#{ui.doma.sidebar.params.status}">状态 (status)</label>
-                    <select id="mail-status">
-                        <option value="" th:text="#{ui.doma.sidebar.params.status.null}">(null) - 不应用过滤</option>
-                        <option value="0" th:text="#{ui.doma.sidebar.params.status.unsent}">0 - 未发送 (Unsent)</option>
-                        <option value="1" th:text="#{ui.doma.sidebar.params.status.success}">1 - 发送成功 (Success)</option>
-                        <option value="9" th:text="#{ui.doma.sidebar.params.status.failed}">9 - 发送失败 (Failed)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="mail-keyword" th:text="#{ui.doma.sidebar.params.keyword}">主题模糊词 (keyword)</label>
-                    <input type="text" id="mail-keyword" th:placeholder="#{ui.doma.sidebar.params.keyword.placeholder}" />
-                </div>
+    <div class="container animate-fade">
+        <!-- 左侧侧边栏 -->
+        <div class="sidebar">
+            <div class="app-title-wrapper">
+                <div class="app-logo" th:text="#{ui.doma.sidebar.logo}">ZeroTrace Doma</div>
+                <div class="app-subtitle" th:text="#{ui.doma.sidebar.subtitle}">Dynamic SQL Interactive Center</div>
             </div>
 
-            <!-- Form 2: IN Search -->
-            <div id="form-in" class="param-form">
-                <div class="form-group">
-                    <label for="in-ids" th:text="#{ui.doma.sidebar.params.in.ids}">ID 列表 (逗号分隔)</label>
-                    <input type="text" id="in-ids" value="1,2,3" th:placeholder="#{ui.doma.sidebar.params.in.ids.placeholder}" />
-                </div>
+            <!-- 演示导航按钮 -->
+            <div class="demo-nav">
+                <button class="demo-btn active" onclick="switchDemo('mail', this)">
+                    <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title1}">示例 1: Parameter & If</span>
+                    <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc1}">参数绑定与条件判断 /*%if */</span>
+                </button>
+                <button class="demo-btn" onclick="switchDemo('in', this)">
+                    <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title2}">示例 2: For Loop & IN</span>
+                    <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc2}">列表循环与 IN 语句 /*%for */</span>
+                </button>
+                <button class="demo-btn" onclick="switchDemo('optional', this)">
+                    <span class="demo-btn-title" th:text="#{ui.doma.sidebar.nav.title3}">示例 3: Optional Date</span>
+                    <span class="demo-btn-desc" th:text="#{ui.doma.sidebar.nav.desc3}">可选条件的日期过滤 (sent_at)</span>
+                </button>
             </div>
 
-            <!-- Form 3: Optional Date -->
-            <div id="form-optional" class="param-form">
-                <div class="form-group">
-                    <label for="optional-date" th:text="#{ui.doma.sidebar.params.optional.date}">起止日期 (fromDate)</label>
-                    <input type="date" id="optional-date" />
+            <!-- 参数控制区 -->
+            <div class="params-panel">
+                <div class="panel-title" th:text="#{ui.doma.sidebar.params.title}">Query Parameters</div>
+
+                <!-- Form 1: Mail Search -->
+                <div id="form-mail" class="param-form active">
+                    <div class="form-group">
+                        <label for="mail-status" th:text="#{ui.doma.sidebar.params.status}">状态 (status)</label>
+                        <select id="mail-status">
+                            <option value="" th:text="#{ui.doma.sidebar.params.status.null}">(null) - 不应用过滤</option>
+                            <option value="0" th:text="#{ui.doma.sidebar.params.status.unsent}">0 - 未发送 (Unsent)
+                            </option>
+                            <option value="1" th:text="#{ui.doma.sidebar.params.status.success}">1 - 发送成功 (Success)
+                            </option>
+                            <option value="9" th:text="#{ui.doma.sidebar.params.status.failed}">9 - 发送失败 (Failed)
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mail-keyword" th:text="#{ui.doma.sidebar.params.keyword}">主题模糊词 (keyword)</label>
+                        <input type="text" id="mail-keyword"
+                            th:placeholder="#{ui.doma.sidebar.params.keyword.placeholder}" />
+                    </div>
                 </div>
+
+                <!-- Form 2: IN Search -->
+                <div id="form-in" class="param-form">
+                    <div class="form-group">
+                        <label for="in-ids" th:text="#{ui.doma.sidebar.params.in.ids}">ID 列表 (逗号分隔)</label>
+                        <input type="text" id="in-ids" value="1,2,3"
+                            th:placeholder="#{ui.doma.sidebar.params.in.ids.placeholder}" />
+                    </div>
+                </div>
+
+                <!-- Form 3: Optional Date -->
+                <div id="form-optional" class="param-form">
+                    <div class="form-group">
+                        <label for="optional-date" th:text="#{ui.doma.sidebar.params.optional.date}">起止日期
+                            (fromDate)</label>
+                        <input type="date" id="optional-date" />
+                    </div>
+                </div>
+
+                <button class="btn-run" onclick="runQuery()" th:text="#{ui.doma.sidebar.params.run}">执行查询 & 打印
+                    SQL</button>
             </div>
 
-            <button class="btn-run" onclick="runQuery()" th:text="#{ui.doma.sidebar.params.run}">执行查询 & 打印 SQL</button>
-        </div>
-
-        <div class="lang-switch-wrapper" style="margin-top: auto; display: flex; gap: 0.5rem; font-size: 0.85rem; align-items: center; justify-content: flex-start; padding-left: 0.5rem;">
-            <a href="?lang=zh_CN" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'zh'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.chinese}">中文</a>
-            <span style="color: var(--card-border);">|</span>
-            <a href="?lang=en_US" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;" th:styleappend="${#locale.language == 'en'} ? 'color: var(--text-main); font-weight: 600;' : ''" th:text="#{ui.common.english}">English</a>
-        </div>
-
-        <a href="/" class="back-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-            <span th:text="#{ui.doma.sidebar.back}">返回主页</span>
-        </a>
-    </div>
-
-    <!-- 右侧内容展示 -->
-    <div class="display-area">
-        <div class="section-header">
-            <div class="section-title" id="demo-title">If Conditional & Parameter Binding</div>
-            <div class="api-badge" id="api-endpoint">GET /demo/doma/mail</div>
-        </div>
-
-        <!-- 终端 SQL 打印 -->
-        <div class="console-container">
-            <div class="console-header">
-                <div class="console-dots">
-                    <div class="console-dot dot-red"></div>
-                    <div class="console-dot dot-yellow"></div>
-                    <div class="console-dot dot-green"></div>
-                </div>
-                <div class="console-title">Doma Core SQL Logger Console</div>
+            <div class="lang-switch-wrapper"
+                style="margin-top: auto; display: flex; gap: 0.5rem; font-size: 0.85rem; align-items: center; justify-content: flex-start; padding-left: 0.5rem;">
+                <a href="?lang=zh_CN" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;"
+                    th:styleappend="${#locale.language == 'zh'} ? 'color: var(--text-main); font-weight: 600;' : ''"
+                    th:text="#{ui.common.chinese}">中文</a>
+                <span style="color: var(--card-border);">|</span>
+                <a href="?lang=en_US" style="color: var(--text-muted); text-decoration: none; transition: color 0.3s;"
+                    th:styleappend="${#locale.language == 'en'} ? 'color: var(--text-main); font-weight: 600;' : ''"
+                    th:text="#{ui.common.english}">English</a>
             </div>
-            <div class="console-body">
-                <div class="console-sql-section">
-                    <div class="console-label">Generated SQL (Raw with parameter placeholders)</div>
-                    <pre class="sql-code-block" id="sql-raw">SELECT * FROM mail_info WHERE 1 = 1</pre>
-                </div>
-                <div class="console-sql-section">
-                    <div class="console-label">Generated SQL (Formatted with bind parameters)</div>
-                    <pre class="sql-code-block" id="sql-formatted">SELECT * FROM mail_info WHERE 1 = 1</pre>
-                </div>
-            </div>
-        </div>
 
-        <!-- 结果集 -->
-        <div class="results-container">
-            <div class="results-title">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                    <line x1="15" y1="3" x2="15" y2="21"></line>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="3" y1="15" x2="21" y2="15"></line>
+            <a href="/" class="back-link">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
                 </svg>
-                <span th:text="#{ui.doma.results.title}">数据查询结果 (SQLite Database Results)</span>
+                <span th:text="#{ui.common.back}">返回主页</span>
+            </a>
+        </div>
+
+        <!-- 右侧内容展示 -->
+        <div class="display-area">
+            <div class="section-header">
+                <div class="section-title" id="demo-title">If Conditional & Parameter Binding</div>
+                <div class="api-badge" id="api-endpoint">GET /demo/doma/mail</div>
             </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Mail ID</th>
-                            <th>Status</th>
-                            <th>Recipient</th>
-                            <th>Email</th>
-                            <th>Subject</th>
-                            <th>Retries</th>
-                        </tr>
-                    </thead>
-                    <tbody id="results-tbody">
-                        <tr>
-                            <td colspan="6" style="text-align: center; color: var(--text-muted);" th:text="#{ui.doma.results.empty}">暂无查询结果，请点击“执行查询”按钮</td>
-                        </tr>
-                    </tbody>
-                </table>
+
+            <!-- 终端 SQL 打印 -->
+            <div class="console-container">
+                <div class="console-header">
+                    <div class="console-dots">
+                        <div class="console-dot dot-red"></div>
+                        <div class="console-dot dot-yellow"></div>
+                        <div class="console-dot dot-green"></div>
+                    </div>
+                    <div class="console-title">Doma Core SQL Logger Console</div>
+                </div>
+                <div class="console-body">
+                    <div class="console-sql-section">
+                        <div class="console-label">Generated SQL (Raw with parameter placeholders)</div>
+                        <pre class="sql-code-block" id="sql-raw">SELECT * FROM mail_info WHERE 1 = 1</pre>
+                    </div>
+                    <div class="console-sql-section">
+                        <div class="console-label">Generated SQL (Formatted with bind parameters)</div>
+                        <pre class="sql-code-block" id="sql-formatted">SELECT * FROM mail_info WHERE 1 = 1</pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 结果集 -->
+            <div class="results-container">
+                <div class="results-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="3" y1="15" x2="21" y2="15"></line>
+                    </svg>
+                    <span th:text="#{ui.doma.results.title}">数据查询结果 (SQLite Database Results)</span>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mail ID</th>
+                                <th>Status</th>
+                                <th>Recipient</th>
+                                <th>Email</th>
+                                <th>Subject</th>
+                                <th>Retries</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-tbody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted);"
+                                    th:text="#{ui.doma.results.empty}">暂无查询结果，请点击“执行查询”按钮</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+
+        <!-- 底栏特性说明 -->
+        <div class="features-container">
+            <div class="feature-card">
+                <span class="feature-icon">🛡️</span>
+                <div class="feature-title" th:text="#{ui.doma.feature.title1}">参数绑定</div>
+                <div class="feature-desc" th:utext="#{ui.doma.feature.desc1}">SQL 注释语法中 <code>/* status */0</code>
+                    在编译期生成参数占位符并安全绑定，防止 SQL 注入。</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">⚡</span>
+                <div class="feature-title" th:text="#{ui.doma.feature.title2}">动态判断与循环</div>
+                <div class="feature-desc" th:utext="#{ui.doma.feature.desc2}">利用 <code>/*%if */</code> 动态拼接 WHERE
+                    条件，<code>/*%for */</code> 实现集合遍历。</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">📖</span>
+                <div class="feature-title" th:text="#{ui.doma.feature.title3}">注释型 SQL 模板</div>
+                <div class="feature-desc" th:text="#{ui.doma.feature.desc3}">因为所有语法都是基于标准 SQL 注释实现的，SQL 文件可以被直接放入
+                    DBeaver 或 Datagrip 等工具直接阅读和执行。</div>
+            </div>
+        </div>
+
+        <div class="footer-note" th:text="#{ui.doma.feature.footer}">
+            Doma 动态 SQL 机制：这些都是基于 SQL 注释实现的，因此 SQL 文件仍然可以作为普通 SQL 阅读。
+        </div>
     </div>
 
-    <!-- 底栏特性说明 -->
-    <div class="features-container">
-        <div class="feature-card">
-            <span class="feature-icon">🛡️</span>
-            <div class="feature-title" th:text="#{ui.doma.feature.title1}">参数绑定</div>
-            <div class="feature-desc" th:utext="#{ui.doma.feature.desc1}">SQL 注释语法中 <code>/* status */0</code> 在编译期生成参数占位符并安全绑定，防止 SQL 注入。</div>
-        </div>
-        <div class="feature-card">
-            <span class="feature-icon">⚡</span>
-            <div class="feature-title" th:text="#{ui.doma.feature.title2}">动态判断与循环</div>
-            <div class="feature-desc" th:utext="#{ui.doma.feature.desc2}">利用 <code>/*%if */</code> 动态拼接 WHERE 条件，<code>/*%for */</code> 实现集合遍历。</div>
-        </div>
-        <div class="feature-card">
-            <span class="feature-icon">📖</span>
-            <div class="feature-title" th:text="#{ui.doma.feature.title3}">注释型 SQL 模板</div>
-            <div class="feature-desc" th:text="#{ui.doma.feature.desc3}">因为所有语法都是基于标准 SQL 注释实现的，SQL 文件可以被直接放入 DBeaver 或 Datagrip 等工具直接阅读和执行。</div>
-        </div>
-    </div>
-
-    <div class="footer-note" th:text="#{ui.doma.feature.footer}">
-        Doma 动态 SQL 机制：这些都是基于 SQL 注释实现的，因此 SQL 文件仍然可以作为普通 SQL 阅读。
-    </div>
-</div>
-
-<script th:inline="javascript">
-    // i18n JavaScript messages map for Doma Demo
-    const i18n = {
-        emptyResponse: /*[[#{ui.doma.results.empty.response}]]*/ "未查询到匹配记录 (Database returned empty list)",
-        errorResponse: /*[[#{ui.doma.results.error}]]*/ "获取数据时发生错误，请检查后端服务。",
-        statusUnsent: /*[[#{ui.doma.results.status.unsent}]]*/ "未发送",
-        statusSuccess: /*[[#{ui.doma.results.status.success}]]*/ "成功",
-        statusFailed: /*[[#{ui.doma.results.status.failed}]]*/ "失败"
-    };
-</script>
-<script>
-    let currentDemo = 'mail';
-
-    function switchDemo(demoType, buttonElement) {
-        currentDemo = demoType;
-        
-        // 更新按钮激活状态
-        document.querySelectorAll('.demo-btn').forEach(btn => btn.classList.remove('active'));
-        buttonElement.classList.add('active');
-
-        // 更新表单显示
-        document.querySelectorAll('.param-form').forEach(form => form.classList.remove('active'));
-        document.getElementById(`form-${demoType}`).classList.add('active');
-
-        // 更新标题与 API endpoint 徽章
-        const titles = {
-            'mail': 'If Conditional & Parameter Binding',
-            'in': 'For Loop & IN Clause',
-            'optional': 'Optional Date Filter'
+    <script th:inline="javascript">
+        // i18n JavaScript messages map for Doma Demo
+        const i18n = {
+            emptyResponse: /*[[#{ui.doma.results.empty.response}]]*/ "未查询到匹配记录 (Database returned empty list)",
+            errorResponse: /*[[#{ui.doma.results.error}]]*/ "获取数据时发生错误，请检查后端服务。",
+            statusUnsent: /*[[#{ui.doma.results.status.unsent}]]*/ "未发送",
+            statusSuccess: /*[[#{ui.doma.results.status.success}]]*/ "成功",
+            statusFailed: /*[[#{ui.doma.results.status.failed}]]*/ "失败"
         };
-        const endpoints = {
-            'mail': 'GET /demo/doma/mail',
-            'in': 'GET /demo/doma/in',
-            'optional': 'GET /demo/doma/optional'
-        };
+    </script>
+    <script>
+        let currentDemo = 'mail';
 
-        document.getElementById('demo-title').innerText = titles[demoType];
-        document.getElementById('api-endpoint').innerText = endpoints[demoType];
+        function switchDemo(demoType, buttonElement) {
+            currentDemo = demoType;
 
-        // 切换后自动触发一次查询
-        runQuery();
-    }
+            // 更新按钮激活状态
+            document.querySelectorAll('.demo-btn').forEach(btn => btn.classList.remove('active'));
+            buttonElement.classList.add('active');
 
-    async function runQuery() {
-        let url = '';
-        if (currentDemo === 'mail') {
-            const status = document.getElementById('mail-status').value;
-            const keyword = document.getElementById('mail-keyword').value;
-            
-            const params = new URLSearchParams();
-            if (status !== '') params.append('status', status);
-            if (keyword !== '') params.append('keyword', keyword);
-            url = `/demo/doma/mail?format=json&${params.toString()}`;
-        } else if (currentDemo === 'in') {
-            const ids = document.getElementById('in-ids').value;
-            const params = new URLSearchParams();
-            if (ids !== '') params.append('ids', ids);
-            url = `/demo/doma/in?format=json&${params.toString()}`;
-        } else if (currentDemo === 'optional') {
-            const date = document.getElementById('optional-date').value;
-            const params = new URLSearchParams();
-            if (date !== '') params.append('fromDate', date);
-            url = `/demo/doma/optional?format=json&${params.toString()}`;
+            // 更新表单显示
+            document.querySelectorAll('.param-form').forEach(form => form.classList.remove('active'));
+            document.getElementById(`form-${demoType}`).classList.add('active');
+
+            // 更新标题与 API endpoint 徽章
+            const titles = {
+                'mail': 'If Conditional & Parameter Binding',
+                'in': 'For Loop & IN Clause',
+                'optional': 'Optional Date Filter'
+            };
+            const endpoints = {
+                'mail': 'GET /demo/doma/mail',
+                'in': 'GET /demo/doma/in',
+                'optional': 'GET /demo/doma/optional'
+            };
+
+            document.getElementById('demo-title').innerText = titles[demoType];
+            document.getElementById('api-endpoint').innerText = endpoints[demoType];
+
+            // 切换后自动触发一次查询
+            runQuery();
         }
 
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('API Request Failed');
-            const data = await response.json();
+        async function runQuery() {
+            let url = '';
+            if (currentDemo === 'mail') {
+                const status = document.getElementById('mail-status').value;
+                const keyword = document.getElementById('mail-keyword').value;
 
-            // 更新控制台 SQL
-            document.getElementById('sql-raw').innerText = data.rawSql || '-- No SQL Executed --';
-            document.getElementById('sql-formatted').innerText = data.formattedSql || '-- No SQL Executed --';
+                const params = new URLSearchParams();
+                if (status !== '') params.append('status', status);
+                if (keyword !== '') params.append('keyword', keyword);
+                url = `/demo/doma/mail?format=json&${params.toString()}`;
+            } else if (currentDemo === 'in') {
+                const ids = document.getElementById('in-ids').value;
+                const params = new URLSearchParams();
+                if (ids !== '') params.append('ids', ids);
+                url = `/demo/doma/in?format=json&${params.toString()}`;
+            } else if (currentDemo === 'optional') {
+                const date = document.getElementById('optional-date').value;
+                const params = new URLSearchParams();
+                if (date !== '') params.append('fromDate', date);
+                url = `/demo/doma/optional?format=json&${params.toString()}`;
+            }
 
-            // 更新表格
-            const tbody = document.getElementById('results-tbody');
-            tbody.innerHTML = '';
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('API Request Failed');
+                const data = await response.json();
 
-            if (data.results.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">${i18n.emptyResponse}</td></tr>`;
-            } else {
-                data.results.forEach(mail => {
-                    let statusLabel = 'Unknown';
-                    if (mail.status === 0) statusLabel = `<span class="badge-status status-0">${i18n.statusUnsent}</span>`;
-                    else if (mail.status === 1) statusLabel = `<span class="badge-status status-1">${i18n.statusSuccess}</span>`;
-                    else if (mail.status === 9) statusLabel = `<span class="badge-status status-9">${i18n.statusFailed}</span>`;
+                // 更新控制台 SQL
+                document.getElementById('sql-raw').innerText = data.rawSql || '-- No SQL Executed --';
+                document.getElementById('sql-formatted').innerText = data.formattedSql || '-- No SQL Executed --';
 
-                    tbody.innerHTML += `
+                // 更新表格
+                const tbody = document.getElementById('results-tbody');
+                tbody.innerHTML = '';
+
+                if (data.results.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">${i18n.emptyResponse}</td></tr>`;
+                } else {
+                    data.results.forEach(mail => {
+                        let statusLabel = 'Unknown';
+                        if (mail.status === 0) statusLabel = `<span class="badge-status status-0">${i18n.statusUnsent}</span>`;
+                        else if (mail.status === 1) statusLabel = `<span class="badge-status status-1">${i18n.statusSuccess}</span>`;
+                        else if (mail.status === 9) statusLabel = `<span class="badge-status status-9">${i18n.statusFailed}</span>`;
+
+                        tbody.innerHTML += `
                         <tr>
                             <td>${mail.mailId}</td>
                             <td>${statusLabel}</td>
@@ -773,29 +823,30 @@
                             <td>${mail.retryCount}</td>
                         </tr>
                     `;
-                });
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching dynamic sql query:', error);
+                document.getElementById('sql-raw').innerText = 'ERROR: Unable to retrieve raw SQL.';
+                document.getElementById('sql-formatted').innerText = 'ERROR: Unable to retrieve formatted SQL.';
+                document.getElementById('results-tbody').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">${i18n.errorResponse}</td></tr>`;
             }
-        } catch (error) {
-            console.error('Error fetching dynamic sql query:', error);
-            document.getElementById('sql-raw').innerText = 'ERROR: Unable to retrieve raw SQL.';
-            document.getElementById('sql-formatted').innerText = 'ERROR: Unable to retrieve formatted SQL.';
-            document.getElementById('results-tbody').innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--danger-color);">${i18n.errorResponse}</td></tr>`;
         }
-    }
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, "&amp;")
-                  .replace(/</g, "&lt;")
-                  .replace(/>/g, "&gt;")
-                  .replace(/"/g, "&quot;")
-                  .replace(/'/g, "&#039;");
-    }
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
 
-    // 页面加载完毕后自动运行一次查询
-    window.addEventListener('DOMContentLoaded', () => {
-        runQuery();
-    });
-</script>
+        // 页面加载完毕后自动运行一次查询
+        window.addEventListener('DOMContentLoaded', () => {
+            runQuery();
+        });
+    </script>
 </body>
+
 </html>
