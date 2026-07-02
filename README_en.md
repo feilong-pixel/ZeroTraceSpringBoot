@@ -1,100 +1,107 @@
-# ZeroTraceSpringBoot: Spring Boot Concurrency & Asynchronous Task Learning Demo
+# ZeroTraceSpringBoot: Spring Boot Concurrency & Asynchronous Demo
 
-[中文](README.md) 
+[中文](README.md) | [Design & Architecture Document](docs/design.md)
 
-This project is a runnable learning demo and sample based on **Spring Boot**. It provides an intuitive comparison and usage showcase for **Spring Batch Processing**, **Embedded ActiveMQ Artemis Asynchronous Queues**, **ThreadPool Concurrency**, and **Spring Task Scheduler Cron-based compensation**. It also demonstrates how transaction and connection management are handled in a lightweight **SQLite** database environment.
-
----
-
-## 🚀 Core Tech Stack
-
-- **Framework Core**: Spring Boot 3.x, Spring MVC, Spring AOP
-- **Asynchronous & Concurrency Management**:
-  - **Spring Batch**: Demonstrates batch processing workflows.
-  - **Spring JMS (ActiveMQ Artemis)**: Demonstrates asynchronous message queuing, load shaving, and retries for delivery.
-  - **Spring TaskExecutor**: Custom thread pool demonstrating local concurrent sending and overflow rejection handling.
-  - **Spring Task Scheduler**: Cron-based scheduling to trigger scanning and retries within specified time windows.
-- **Persistence Layer**: **Doma 2** (Type-safe Java SQL framework) ensures clean separation between SQL files and Java code.
-- **Database**: **SQLite**, configured with **WAL (Write-Ahead Logging)** mode and busy timeout wait duration, providing solid support for concurrent write operations.
+ZeroTraceSpringBoot is a runnable Spring Boot project designed to demonstrate various concurrency and asynchronous processing patterns. Using **mail sending (SMTP)** as a classic entry point, the project showcases and compares four distinct approaches: **Spring Batch processing, Embedded ActiveMQ Artemis message queueing, ThreadPool task execution, and Spring Task Scheduler compensation**. It also demonstrates fine-grained transaction management and connection handling within a lightweight **SQLite** file-based database.
 
 ---
 
-## 🛠️ Five Core Demo Scenarios
+## 💡 Core Design Patterns & Technical Insights
 
-### 1. Scenario 1: Spring Batch Scheduled Task
-- **Process**: Reads pending emails via `Reader`, processes/formats them via `Processor`, and writes status updates and transaction logs using short transactions via `Writer`.
-- **Trigger**: Can be triggered externally via command-line arguments (independent of the Web container's lifecycle), perfect for routine offline batch processing jobs.
+This project uses SMTP mail sending as a classic entry point to showcase and contrast different technical implementations of concurrency and asynchronous processing. By implementing different architectural approaches under the same business scenario, the project highlights the following technical aspects:
 
-### 2. Scenario 2: ActiveMQ Artemis Asynchronous Queue & Retry Compensation
-- **Process**: When an API receives a send request, it first saves the email to SQLite and pushes the `mail_id` to the ActiveMQ Artemis queue. An asynchronous JMS listener consumes the message and invokes the SMTP client to deliver it.
-- **Retry**: In case of network errors or SMTP failures, the exception is caught, retry counts are incremented, and status changes to `FAILED` (9) while writing logs. These are subsequently scanned and retried by Scenario 4.
-
-### 3. Scenario 3: Spring ThreadPool Concurrency & Overflow Protection
-- **Process**: Demonstrates concurrent sending using `@Async("mailThreadPoolExecutor")` powered by a custom thread pool configured with Core Threads: 2, Max Threads: 5, and Queue Capacity: 10.
-- **Flow Control**: If high-volume requests exceed capacity, an overflow occurs and throws `RejectedExecutionException`. The application catches this, marks all overflowed emails as `FAILED` (9) in the database with log entries, and immediately returns a 500 error response to the client.
-
-### 4. Scenario 4: Spring Task Scheduler Scanning & Retry Compensation
-- **Process**: Configured using `@Scheduled(cron = "${mail.scheduler.cron:0 */10 8-23 * * MON-FRI}")`, which automatically runs **every 10 minutes from 8:00 AM to 11:00 PM on weekdays**.
-- **Retry Limit**: Scans the database for emails with `status = 0` (unsent) or `status = 9` (failed, and retry count < 3). It reuses a single SMTP client connection to send them in batches, ensuring no unsent emails are lost even if the server restarts.
-- **Interfaces**: Provides a manual trigger API and status checking endpoint.
-
-### 5. Scenario 5: SQLite Multi-Transaction Isolation Control
-- **Process**: SQLite database files throw `SQLITE_BUSY` when a single large transaction holds locks on multiple modified rows.
-- **Control**: In this project, when handling multiple emails, the reading, SMTP interaction, status updating, and log saving for each email are encapsulated within their own short transaction (`Propagation.REQUIRES_NEW`), releasing locks immediately to ensure SQLite safety.
+1. **High Concurrency & Rate Limiting**:
+   - Compares **message queue load shaving** (using persistent message brokers for guaranteed delivery) against **in-memory thread pools** (using `ThreadPoolTaskExecutor` with custom rejection policies) to showcase stability under traffic surges.
+2. **Short-Transaction Control in SQLite (Mitigating SQLITE_BUSY)**:
+   - Shows how to break down bulk email dispatching, SMTP handshakes, status updates, and logging into isolated, single-record transactions using `Propagation.REQUIRES_NEW`. This strategy releases SQLite file-level locks immediately, preventing write lock contention and `SQLITE_BUSY` errors.
+3. **Property Configuration Loading Strategies**:
+   - Compares three classic configuration loading techniques: native Java properties loading, JDK `ResourceBundle` property mapping, and Spring `@Value` declarative annotation injection. This serves as a reference for selecting the appropriate level of framework coupling.
+4. **Multi-Dimensional Task Scheduling**:
+   - Showcases both offline CLI-triggered batch jobs (run independently of the Web container's lifecycle via Spring Batch) and built-in cron-based background worker scanning (for automated retry/consistency reconciliation).
 
 ---
 
-## ⚙️ Three Implementations of SmtpClient Configuration Loading
+## 🛠️ Five Core Scenarios
 
-To demonstrate different coding practices across Java SE and Spring environments, the project demonstrates three ways to load properties from `mail.properties`:
+The table below outlines the core scenarios implemented in this project, along with their key configuration classes and files:
 
-1. **Classic Java Properties Loading (For non-Spring POJOs)**
-   - **Class**: [basic/SmtpClient.java](src/main/java/com/feilonglab/smtp/basic/SmtpClient.java)
-   - **Mechanism**: Employs JDK native `java.util.Properties` loading the classpath file via ClassLoader streams:
-     ```java
-     Properties props = new Properties();
-     try (InputStream in = SmtpClient.class.getResourceAsStream("/mail.properties")) {
-         props.load(in);
-     }
-     ```
-   - **Pros**: 100% independent of Spring, runnable in standard Java SE apps, highly portable.
-
-2. **ResourceBundle Binding (For classic Java Resource Binding)**
-   - **Class**: [mq/SmtpClient.java](src/main/java/com/feilonglab/smtp/mq/SmtpClient.java)
-   - **Mechanism**: Employs `java.util.ResourceBundle.getBundle("mail")` inside class constructors as a fallback mechanism.
-   - **Pros**: Standard Java resource bundling mechanism, commonly used for localization, runs fine without Spring bean contexts.
-
-3. **Spring Declarative Annotation Injection (For Spring Managed Components)**
-   - **Class**: [threadpool/SmtpClient.java](src/main/java/com/feilonglab/smtp/threadpool/SmtpClient.java), [scheduler/SmtpClient.java](src/main/java/com/feilonglab/smtp/scheduler/SmtpClient.java)
-   - **Mechanism**: Configures `@Component` and `@PropertySource("classpath:mail.properties")` on the class, binding fields using `@Value("${mail.smtp.host}")` during Bean initialization.
-   - **Pros**: Idiomatic Spring configuration pattern, fits cleanly with Prototype Scope beans.
+| Scenario | Architectural Approach & Flow | Key Configuration & Entry Point | Testing / Verification |
+| :--- | :--- | :--- | :--- |
+| **1. Spring Batch Processing** | Reads unsent mail from SQLite in chunks, dispatches them, and writes logs and status updates using isolated short transactions. Ideal for high-volume offline batch jobs. | `JobConfig`: [MailBatchConfig.java](src/main/java/com/feilonglab/springboot/batch/sendmail/MailBatchConfig.java)<br>`Runner`: [BatchCommandLineRunner.java](src/main/java/com/feilonglab/springboot/batch/sendmail/BatchCommandLineRunner.java) | Run the compiled JAR via the command line with `--run-batch-job` to launch without booting the Web container. |
+| **2. ActiveMQ Artemis Async Queue** | Persists email metadata to SQLite on API request, then pushes the `mail_id` to an embedded JMS queue. A JMS listener consumes the queue asynchronously to dispatch the mail. | `JMS Config`: [MqConfig.java](src/main/java/com/feilonglab/springboot/web/mq/sendmail/MqConfig.java)<br>`Consumer`: [MqSendMailService.java](src/main/java/com/feilonglab/springboot/web/mq/sendmail/MqSendMailService.java) | POST requests to the queue endpoint to observe asynchronous delivery, queue consumption, and automatic failed-message persistence. |
+| **3. ThreadPool Concurrency & Overflow** | Dispatches emails concurrently using `@Async` backed by a custom thread pool (Core: 2, Max: 5, Queue: 10). Excess traffic triggers `AbortPolicy`, which is caught to persist the overflow as failed records. | `Pool Config`: [ThreadPoolConfig.java](src/main/java/com/feilonglab/springboot/web/threadpool/sendmail/ThreadPoolConfig.java)<br>`Async Service`: [ThreadPoolSendMailService.java](src/main/java/com/feilonglab/springboot/web/threadpool/sendmail/ThreadPoolSendMailService.java) | Send a batch request of >15 emails to trigger the rejection policy, observing how overflowed items are safely handled and recorded. |
+| **4. Task Scheduler Compensation** | Periodically scans SQLite for unsent or failed emails (retry count < 3) and batch-sends them using a single SMTP connection. Ensures eventual consistency and recovery from server restarts. | `Schedule Config`: [SchedulerConfig.java](src/main/java/com/feilonglab/springboot/web/scheduler/sendmail/SchedulerConfig.java)<br>`Scheduler Service`: [SchedulerSendMailService.java](src/main/java/com/feilonglab/springboot/web/scheduler/sendmail/SchedulerSendMailService.java) | Query `GET /scheduler/status` for cron and queue status, or `POST /scheduler/trigger` to manually trigger an immediate compensation run. |
+| **5. SQLite Multi-Transaction Control** | Demonstrates transaction isolation using Doma 2. Encapsulates each email's database updates into an independent transaction to keep SQLite file-locks short and prevent concurrency deadlock. | `Transaction Control`: [MailInfoDao.java](src/main/java/com/feilonglab/springboot/model/dao/MailInfoDao.java) (Type-safe DAO generated by Doma 2) | Observe database stability and write performance during concurrent thread-pool and scheduler execution. |
 
 ---
 
-## 📂 Core API Reference
+## ⚙️ Property Loading Implementations
 
-### 1. ThreadPool Concurrency Send Test (Scenario 3)
-- **Endpoint**: `POST /threadpool/sendmail`
-- **Body** (JSON Array):
+To illustrate configuration patterns across both standard Java SE and Spring environments, the project implements three distinct ways to load properties in `SmtpClient`:
+
+### 1. Classic Java Properties (Framework-Independent)
+- **Class**: [basic/SmtpClient.java](src/main/java/com/feilonglab/smtp/basic/SmtpClient.java)
+- **Implementation**:
+  ```java
+  Properties props = new Properties();
+  try (InputStream in = SmtpClient.class.getResourceAsStream("/mail.properties")) {
+      props.load(in);
+  }
+  ```
+- **Use Case**: Completely decoupled from Spring. Useful for standalone utilities or core libraries where framework dependencies are undesirable.
+
+### 2. JDK ResourceBundle (Standard Java Internationalization)
+- **Class**: [mq/SmtpClient.java](src/main/java/com/feilonglab/smtp/mq/SmtpClient.java)
+- **Implementation**:
+  ```java
+  ResourceBundle bundle = ResourceBundle.getBundle("mail");
+  String host = bundle.getString("mail.smtp.host");
+  ```
+- **Use Case**: Utilizes standard Java localization APIs. Offers a cleaner approach for properties loading without manual stream management.
+
+### 3. Spring Declarative Injection (Framework-Managed)
+- **Class**: [threadpool/SmtpClient.java](src/main/java/com/feilonglab/smtp/threadpool/SmtpClient.java) / [scheduler/SmtpClient.java](src/main/java/com/feilonglab/smtp/scheduler/SmtpClient.java)
+- **Implementation**:
+  ```java
+  @Component
+  @PropertySource("classpath:mail.properties")
+  public class SmtpClient {
+      @Value("${mail.smtp.host}")
+      private String host;
+      // ...
+  }
+  ```
+- **Use Case**: Idiomatic Spring configuration pattern. Simplifies dependency injection and works seamlessly with `@Scope("prototype")` for dynamic lifecycle management.
+
+---
+
+## 📊 REST API Reference
+
+The following HTTP endpoints allow you to trigger and observe the concurrency and queuing behaviors:
+
+### 1. Concurrent Mail Dispatch & Rejection Test (Scenario 3)
+- **Method**: `POST /threadpool/sendmail`
+- **Request Body** (JSON Array):
   ```json
   [
     {
-      "toName": "John Doe",
-      "toEmail": "john.doe@example.com",
-      "subject": "Concurrency Test Mail 1",
-      "content": "Hello World!"
+      "toName": "Demo User A",
+      "toEmail": "usera@example.com",
+      "subject": "ThreadPool Test - 01",
+      "content": "Testing concurrency behavior."
     },
     {
-      "toName": "Jane Doe",
-      "toEmail": "jane.doe@example.com",
-      "subject": "Concurrency Test Mail 2",
-      "content": "Hello Code!"
+      "toName": "Demo User B",
+      "toEmail": "userb@example.com",
+      "subject": "ThreadPool Test - 02",
+      "content": "Testing database logging under stress."
     }
   ]
   ```
+- **Test Detail**: When sending more than 15 emails simultaneously (Core: 2 + Max: 5 + Queue: 10), the remaining emails will be rejected by the executor, and immediately recorded as `FAILED` in the SQLite database.
 
-### 2. Task Scheduler Status (Scenario 4)
-- **Endpoint**: `GET /scheduler/status`
+### 2. Check Scheduler Status (Scenario 4)
+- **Method**: `GET /scheduler/status`
 - **Response** (Example):
   ```json
   {
@@ -105,56 +112,59 @@ To demonstrate different coding practices across Java SE and Spring environments
   }
   ```
 
-### 3. Manually Trigger Task Scheduler (Scenario 4)
-- **Endpoint**: `POST /scheduler/trigger`
-- **Description**: Triggers a manual round of email sending for unsent or failed emails (under retry limits) and returns the count.
+### 3. Manually Trigger Compensation (Scenario 4)
+- **Method**: `POST /scheduler/trigger`
+- **Response**: Returns the count of pending/failed emails retrieved and sent during this manual run.
 
 ---
 
-## 🌐 Web UI & Demos
+## 🌐 Web UI & Live SQL Log Console
 
-In addition to the backend demonstration scenarios, the project contains an interactive, bilingual front-end console:
+In addition to REST endpoints, the application provides an interactive front-end dashboard:
 
-1. **Dynamic Language (i18n) Switching**:
-   - The entire Web UI (Main Mail Center, Thymeleaf Demo, and Doma SQL Interactive Demo) supports dynamic `中文 | English` switching.
-   - Driven by Spring Boot `LocaleResolver` session resolution and the `message.properties` / `message_zh.properties` bundles.
+1. **Dashboard Home (`/`)**:
+   - Displays real-time SMTP configurations (set in [mail.properties](src/main/resources/mail.properties)).
+   - Includes a rich-text/HTML email composer.
+   - Provides quick links to sub-modules.
+   - Supports instant language switching (`中文 | English`) via Spring Boot `LocaleResolver` and `message.properties` bundles.
 
-2. **ZeroTrace Main Center (`/`)**:
-   - Displays SMTP configurations (host, port, username, sender alias) and provides a form to send rich-text/HTML emails.
-   - Includes **Feature Navigation** links at the top-right of the main pane to navigate to feature demo pages.
+2. **Thymeleaf Features & CRUD Demo (`/demo/thymeleaf`)**:
+   - Shows core Thymeleaf tags in action: text replacement (`th:text`/`th:placeholder`), conditionals (`th:if`/`th:block`), iterations (`th:each`), and form bindings (`th:object`/`th:field`).
+   - Offers real-time CRUD operations against the SQLite database records.
 
-3. **Thymeleaf Core Demo (`/demo/thymeleaf`)**:
-   - **Thymeleaf Features**: Showcases text variable parsing (`th:text`/`th:placeholder`), conditional checks (`th:if`/`th:block`), iteration (`th:each`), object bindings (`th:object`/`th:field`), and URL dynamic parameters (`th:href`).
-   - **Interactive CRUD**: Allows developers to view, add, edit, and delete email mock records in SQLite directly from the UI.
-
-4. **Doma 2 Dynamic SQL Interactive Console (`/demo/doma`)**:
-   - **Comment-based SQL Templates**: Showcases Doma 2's signature feature. Templates are standard SQL comments (e.g., `/*%if */`, `/*%for */`, date filtering) allowing SQL files to remain executable by database clients (DBeaver, DataGrip).
-   - **Interactive Console**: Enter parameters on the left and click "Execute Query & Print SQL". The **Doma Core SQL Logger Console** on the right prints colorized, formatted SQL queries and bound parameters, and renders matching database records below.
+3. **Doma 2 Dynamic SQL Console (`/demo/doma`)**:
+   - **SQL Templates**: Showcases Doma 2's comment-based dynamic SQL (`/*%if */`, `/*%for */`). These templates are valid standard SQL, meaning they can be opened and run directly in database clients like DataGrip or DBeaver.
+   - **Real-Time SQL Log Terminal**: Adjust query parameters in the left pane and execute. The right panel (Doma Core SQL Logger Console) displays live, colorized SQL generation and parameter binding logs, with the retrieved records displayed below.
 
 ---
 
-## ⚙️ Quick Start & Run
+## 🚀 Getting Started
 
-### 1. Compile and Run Integration Tests
-Execute Maven Wrapper to clean, compile, and run unit tests:
+### 1. Build and Run Tests
+Clean, compile, and run tests using the Maven Wrapper:
 ```bash
-# Windows PowerShell/Command Prompt
+# Windows
 .\mvnw.cmd clean compile test
 
-# Linux / Mac
+# Linux/Mac
 ./mvnw clean compile test
 ```
 
-### 2. Run Web Service
-Start the application:
+### 2. Launch the Web Server
 ```bash
-# Windows PowerShell/Command Prompt
-.\mvnw.cmd spring-boot:run
-
-# Linux / Mac / Git Bash
-./mvnw spring-boot:run
+# Launch the application
+mvnw spring-boot:run
 ```
-Open your browser and navigate to: `http://localhost:8080`.
+Access the dashboard at `http://localhost:8080`.
 
-### 3. Local Mail Simulation Configuration
-Modify `src/main/resources/mail.properties` to set custom SMTP parameters or toggle simulated network/SMTP failures to observe error handling and retry logic.
+### 3. Run Offline Batch Job (Scenario 1)
+```bash
+# Launch in non-Web mode to trigger the batch processing job
+mvnw spring-boot:run -Dspring-boot.run.arguments="--run-batch-job"
+```
+
+### 4. Simulating Failures & SMTP Logs
+To inspect error handling and retry mechanisms locally, modify [mail.properties](src/main/resources/mail.properties):
+- `mail.smtp.host` and `mail.smtp.port`: Set up mock or real SMTP configurations.
+- `mail.debug.flag.smtp`: Set to `true` to enable verbose SMTP debugging logs.
+- `mail.debug.flag.send`: Set to `FAIL_ALL` or `FAIL_RANDOM` to simulate network and mail server errors. This lets you observe message queue retries and task scheduler compensation in action.

@@ -1,100 +1,108 @@
-# ZeroTraceSpringBoot Spring Boot 并发与异步任务演示示例
+# ZeroTraceSpringBoot (Spring Boot 并发与异步 技术方案示例)
 
-[English](README_en.md) 
+[English](README_en.md) | [设计与需求说明书](docs/design.md)
 
-本工程是一个基于 **Spring Boot** 的可运行学习演示示例。通过该项目，您可以直观地了解并对比 **Spring Batch 批处理**、**Embedded ActiveMQ Artemis 异步队列**、**ThreadPool 线程池并发** 以及 **Spring Task Scheduler 定时补偿** 等多种并发和异步任务处理模式，展示在轻量级 **SQLite 数据库** 环境下如何进行事务与连接管理。
-
----
-
-## 🚀 核心技术栈
-
-- **框架核心**：Spring Boot 3.x, Spring MVC, Spring AOP
-- **异步与并发管理**：
-  - **Spring Batch**：实现批处理任务的流程演示
-  - **Spring JMS (ActiveMQ Artemis)**：实现嵌入式异步消息削峰和重试投递逻辑演示
-  - **Spring TaskExecutor**：使用自定义线程池演示本地的并发发送与拒绝策略处理
-  - **Spring Task Scheduler**：基于 Cron 表达式在指定时间窗口内执行定时重试扫描
-- **持久层**：**Doma 2** (类型安全的 Java SQL 框架)，保证 SQL 语句与 Java 代码清晰隔离
-- **数据库**：**SQLite**，并启用了 **WAL (Write-Ahead Logging)** 模式与并发繁忙等待时长配置，以更好地支持并发写入操作
+本项目是一个基于 **Spring Boot** 的可运行技术示例项目。项目以**邮件发送（SMTP）**作为经典切入口，具体展示和对比了四种不同的并发与异步技术方案（**Spring Batch 批处理、Embedded ActiveMQ Artemis 异步队列、ThreadPool 线程池并发、Spring Task Scheduler 定时补偿**），并展示了在轻量级 **SQLite** 文件数据库环境下如何进行精细的事务控制与连接管理。
 
 ---
 
-## 🛠️ 五大核心演示场景
+## 💡 核心设计与技术点
 
-### 1. 场景一：Spring Batch 批处理计划任务
-- **流程**：利用 `Reader` 读取待发送邮件，`Processor` 统一组装发送，`Writer` 对每封邮件以独立的短事务更新状态并记录发送日志。
-- **触发**：支持从外部命令行（非 Web 容器生命周期内）传入特定 Job 参数触发执行，适合例行批处理作业演示。
+本项目以邮件发送（SMTP）为切入口，旨在展示各种并发和异步处理模式的实际技术实现与配置细节。通过在相同业务场景下实现不同的技术架构，本项目具体示例了以下技术点：
 
-### 2. 场景二：ActiveMQ Artemis 异步队列与重试补偿
-- **流程**：当 API 接收到发送请求，首先将邮件写入 SQLite，并将 `mail_id` 推送至 ActiveMQ Artemis。监听器消费消息时调用 SMTP 客户端发送。
-- **重试**：如遇发送失败或网络异常，程序将捕获异常并增加重试计数，状态变更为 `FAILED` (9)，并记录发送日志，后续由场景四进行后台重试。
-
-### 3. 场景三：Spring 线程池并发投递与溢出保护
-- **流程**：自定义核心线程 2，最大线程 5，队列 10 的 `ThreadPoolTaskExecutor` 发送线程池。使用 `@Async("mailThreadPoolExecutor")` 演示并发发送。
-- **限流**：若瞬时并发量过大导致队列溢出，程序会抛出 `RejectedExecutionException`。程序捕获该异常后，将未进队列的邮件在数据库中直接标记为 `FAILED` (9) 并记录日志，并对客户端快速返回 500 告知溢出状态。
-
-### 4. 场景四：Spring Task Scheduler 定时轮询与补偿
-- **流程**：通过 `@Scheduled(cron = "${mail.scheduler.cron:0 */10 8-23 * * MON-FRI}")` 配置规则，默认在**工作日的 8:00 ~ 23:00 时间段内每 10 分钟**自动扫描一次数据库。
-- **重试限制**：捞取 `status = 0` (未发送) 或 `status = 9` (发送失败，且重试次数 `< 3`) 的邮件，复用单一的 SMTP 客户端连接批量发出，确保即使服务异常重启后也能自动将所有遗漏邮件送达。
-- **接口**：提供手动触发重试与定时状态监控接口。
-
-### 5. 场景五：SQLite 多事务隔离控制
-- **流程**：SQLite 文件锁在单个大事务持有多封邮件修改时会报 `SQLITE_BUSY`。
-- **控制**：本项目中，所有场景在处理多封邮件时，每一封邮件的读取、SMTP 交互、状态更新与日志写入均独立属于它自己的短事务（`Propagation.REQUIRES_NEW`），快速释放锁，以实现并发时的文件锁安全操作。
+1. **高并发与溢出保护设计**：
+   - 对比**消息队列削峰**（使用消息代理做可靠性持久化）与**内存线程池**（使用 `ThreadPoolTaskExecutor` 配合拒绝策略）在应对瞬时突发流量时的容错与限流表现。
+2. **SQLite 并发下的短事务控制 (Mitigating SQLITE_BUSY)**：
+   - 示例如何将批处理或定时补偿的邮件读取、连接 SMTP 发送、修改状态及写日志，通过 `Propagation.REQUIRES_NEW` 划分为**单封邮件独立短事务**，从而快速释放 SQLite 文件级排他锁，防止并发任务因长时间持有数据库写锁而产生 `SQLITE_BUSY` 锁死异常。
+3. **三种不同的配置文件加载策略**：
+   - 在同一个项目中，对比展示了 Java 经典 Properties 读取、JDK `ResourceBundle` 资源绑定、以及 Spring `@Value` 声明式注入三种读取配置的方式，展示不同解耦层级的实现细节。
+4. **多维度定时任务控制**：
+   - 包含通过 Spring Batch 示例的不随 Web 容器生命周期管理的命令行触发（外部拉起式作业），以及在 Web 容器生命周期内基于 Cron 表达式自动执行的内置补偿轮询机制。
 
 ---
 
-## ⚙️ SmtpClient 属性配置加载的三种实现方式
+## 🛠️ 五大核心示例场景
 
-为了演示 Java 经典环境与 Spring 环境下的不同开发习惯，本工程在各场景的 `SmtpClient` 中演示了三种不同的 Properties 属性配置文件读取方式：
+为了清晰了解每种方案的内部逻辑，下表总结了本项目的五大示例场景及核心代码入口：
 
-1. **方式一：Java 经典 Properties 加载（适用于非 Spring POJO）**
-   - **代表类**：[basic/SmtpClient.java](src/main/java/com/feilonglab/smtp/basic/SmtpClient.java)
-   - **原理**：使用 JDK 原生的 `java.util.Properties`，通过当前类的 ClassLoader 以流（Stream）的方式加载类路径下的文件：
-     ```java
-     Properties props = new Properties();
-     try (InputStream in = SmtpClient.class.getResourceAsStream("/mail.properties")) {
-         props.load(in);
-     }
-     ```
-   - **特点**：完全独立于 Spring 容器，可在任何普通的 Java SE 应用程序中运行，移植性高。
-
-2. **方式二：ResourceBundle 绑定读取（适用于经典 Java 国际化与资源绑定）**
-   - **代表类**：[mq/SmtpClient.java](src/main/java/com/feilonglab/smtp/mq/SmtpClient.java)
-   - **原理**：利用 `java.util.ResourceBundle.getBundle("mail")` 在无参构造函数中拉取类路径下的属性映射，作为非容器环境下的备份手段。
-   - **特点**：经典的 Java 资源读取方式，通常用于国际化资源处理，可在不依赖 Spring 容器的普通 Java 环境下依然能够良好运行。
-
-3. **方式三：Spring 声明式注解注入（适用于 Spring 容器管理组件）**
-   - **代表类**：[threadpool/SmtpClient.java](src/main/java/com/feilonglab/smtp/threadpool/SmtpClient.java)、[scheduler/SmtpClient.java](src/main/java/com/feilonglab/smtp/scheduler/SmtpClient.java)
-   - **原理**：在类上添加 `@Component` 和 `@PropertySource("classpath:mail.properties")`，使属性合并进 Spring `Environment` 中，字段使用 `@Value("${mail.smtp.host}")` 声明式地让容器在初始化 Bean 时自动注入。
-   - **特点**：Spring 体系下标准的属性管理模式，能够天然融入 Spring Configuration 并配合 Prototype Scope 动态管理生命周期。
+| 示例场景 | 核心业务流程与设计 | 关键配置与业务入口 | 示例/测试方法 |
+| :--- | :--- | :--- | :--- |
+| **1. Spring Batch 批处理计划任务** | `Reader` 从 SQLite 提取未发邮件，`Processor` 组装并单封发送，`Writer` 以独立短事务更新状态并记录发送日志。适用于大数据量离线批处理。 | `JobConfig`: [MailBatchConfig.java](src/main/java/com/feilonglab/springboot/batch/sendmail/MailBatchConfig.java)<br>`Runner`: [BatchCommandLineRunner.java](src/main/java/com/feilonglab/springboot/batch/sendmail/BatchCommandLineRunner.java) | 通过命令行运行带 `--run-batch-job` 参数的 jar 包触发（非 Web 容器模式）。 |
+| **2. ActiveMQ Artemis 异步队列** | 接收 API 请求后，前置持久化邮件到 SQLite，并将 `mail_id` 投递至嵌入式消息队列。JMS 监听器异步消费并调用 SMTP 客户端发送。如遇异常则增加重试计数并标记为失败，由场景 4 进行重试。 | `JMS Config`: [MqConfig.java](src/main/java/com/feilonglab/springboot/web/mq/sendmail/MqConfig.java)<br>`Consumer`: [MqSendMailService.java](src/main/java/com/feilonglab/springboot/web/mq/sendmail/MqSendMailService.java) | 发送 POST 请求到异步队列接口，观察嵌入式 ActiveMQ 消息队列的消费与重试行为。 |
+| **3. ThreadPool 线程池并发与溢出** | 自定义核心线程 2，最大线程 5，队列 10 的线程池，配合 `@Async` 异步执行。当并发流量撑满队列触发拒绝策略（`AbortPolicy`）时，系统捕获异常并将被拒绝邮件在数据库直接置为 `FAILED(9)`，保证系统不会因内存积压崩溃。 | `Pool Config`: [ThreadPoolConfig.java](src/main/java/com/feilonglab/springboot/web/threadpool/sendmail/ThreadPoolConfig.java)<br>`Async Service`: [ThreadPoolSendMailService.java](src/main/java/com/feilonglab/springboot/web/threadpool/sendmail/ThreadPoolSendMailService.java) | 发送批量发送请求（大于 15 封邮件）至并发接口，观察部分邮件进入队列异步发送，剩余溢出邮件触发拒绝策略并被数据库捕获标记失败。 |
+| **4. Task Scheduler 定时补偿与轮询** | 每隔指定时间（默认工作日 8:00~23:00 内每 10 分钟）轮询数据库捞取未发送或重试次数 `<3` 的失败邮件，复用单一连接批量发出，确保网络异常或宕机重启后，邮件最终送达。 | `Schedule Config`: [SchedulerConfig.java](src/main/java/com/feilonglab/springboot/web/scheduler/sendmail/SchedulerConfig.java)<br>`Scheduler Service`: [SchedulerSendMailService.java](src/main/java/com/feilonglab/springboot/web/scheduler/sendmail/SchedulerSendMailService.java) | 使用 `GET /scheduler/status` 查询定时器配置与积压状态；使用 `POST /scheduler/trigger` 手动触发一次补偿扫描。 |
+| **5. SQLite 多事务锁控制** | 示例为规避 SQLite 文件级独占锁造成的 `SQLITE_BUSY` 异常，将所有批处理与定时发送任务以单封邮件为粒度，在独立短事务中进行状态更新和日志记录。 | `Transaction Control`: [MailInfoDao.java](src/main/java/com/feilonglab/springboot/model/dao/MailInfoDao.java) （基于 Doma 2 的 DAO 接口设计） | 在高并发线程池或定时任务发送过程中，数据库能够保持高稳定性，不发生写冲突死锁。 |
 
 ---
 
-## 📂 核心 API 接口一览
+## ⚙️ 三种配置加载模式示例
 
-### 1. 线程池并发发送测试 (场景三)
-- **接口**：`POST /threadpool/sendmail`
-- **Body** (JSON 数组)：
+为了展示不同生命周期和环境下的开发方式，项目在 `SmtpClient` 的配置读取上示例了三种不同的读取习惯：
+
+### 1. Java 经典 Properties 加载 (脱离容器的普通 POJO)
+- **示例类**：[basic/SmtpClient.java](src/main/java/com/feilonglab/smtp/basic/SmtpClient.java)
+- **示例代码**：
+  ```java
+  Properties props = new Properties();
+  try (InputStream in = SmtpClient.class.getResourceAsStream("/mail.properties")) {
+      props.load(in);
+  }
+  ```
+- **技术点**：完全不依赖 Spring IOC 容器，利用 ClassLoader 流式读取 classpath 下的配置文件。适合用于可移植性极高、不与任何框架绑定的底层工具包中。
+
+### 2. JDK ResourceBundle 资源绑定 (适用于国际化与经典 Java 绑定)
+- **示例类**：[mq/SmtpClient.java](src/main/java/com/feilonglab/smtp/mq/SmtpClient.java)
+- **示例代码**：
+  ```java
+  // 在构造器中直接绑定 mail.properties
+  ResourceBundle bundle = ResourceBundle.getBundle("mail");
+  String host = bundle.getString("mail.smtp.host");
+  ```
+- **技术点**：利用 Java 核心库提供的资源绑定器，通常用于 i18n 资源处理，也可作为轻量级的配置文件备份加载方案，不需要管理资源文件的流闭合。
+
+### 3. Spring 声明式注解注入 (标准的 Spring 容器管理组件)
+- **示例类**：[threadpool/SmtpClient.java](src/main/java/com/feilonglab/smtp/threadpool/SmtpClient.java) / [scheduler/SmtpClient.java](src/main/java/com/feilonglab/smtp/scheduler/SmtpClient.java)
+- **示例代码**：
+  ```java
+  @Component
+  @PropertySource("classpath:mail.properties")
+  public class SmtpClient {
+      @Value("${mail.smtp.host}")
+      private String host;
+      // ...
+  }
+  ```
+- **技术点**：利用 Spring Framework 的 `@Value` 和 `@PropertySource` 进行属性动态解析与注入。能够方便地配合 `@Scope("prototype")` 动态控制组件的生命周期与重加载。
+
+---
+
+## 📊 核心示例 API 参考
+
+示例 API 主要用于触发特定的并发和异步逻辑，可用如下 HTTP 请求进行调用：
+
+### 1. 并发发送与溢出测试 (场景 3)
+- **请求方法**：`POST /threadpool/sendmail`
+- **请求内容** (JSON 数组)：
   ```json
   [
     {
-      "toName": "张三",
-      "toEmail": "zhangsan@example.com",
-      "subject": "并发测试邮件 1",
-      "content": "Hello World!"
+      "toName": "示例用户A",
+      "toEmail": "usera@example.com",
+      "subject": "并发测试 - 01",
+      "content": "这是一封用于并发测试的邮件体。"
     },
     {
-      "toName": "李四",
-      "toEmail": "lisi@example.com",
-      "subject": "并发测试邮件 2",
-      "content": "Hello Code!"
+      "toName": "示例用户B",
+      "toEmail": "userb@example.com",
+      "subject": "并发测试 - 02",
+      "content": "测试线程池队列溢出和状态落盘。"
     }
   ]
   ```
+- **示例要点**：当同时传入的数组长度大于 15 时（核心线程 2 + 最大 5 + 队列 10），系统会对其余邮件触发拒签，并直接记录失败日志。
 
-### 2. 计划任务运行状态 (场景四)
-- **接口**：`GET /scheduler/status`
+### 2. 状态轮询监控 (场景 4)
+- **请求方法**：`GET /scheduler/status`
 - **返回结果** (示例)：
   ```json
   {
@@ -105,56 +113,59 @@
   }
   ```
 
-### 3. 手动触发计划任务轮询 (场景四)
-- **接口**：`POST /scheduler/trigger`
-- **功能**：立即对数据库内待发/重试次数未超限的邮件执行一次投递，并返回投递数。
+### 3. 手动触发定时轮询补偿 (场景 4)
+- **请求方法**：`POST /scheduler/trigger`
+- **响应**：返回本次捞取并成功投递/重试的邮件数量。
 
 ---
 
-## 🌐 国际化与交互演示页面 (Web UI & Demos)
+## 🌐 双语前端交互与 SQL 实时监控控制台
 
-本项目不仅提供了丰富的后台并发模式演示，还包含一个精心设计的多语言交互式 Web 前端控制台，让开发者能直观体验各种模式的运行效果：
+除了后端 API，项目还在内置的 Web 控制中心提供了丰富的可视化交互示例：
 
-1. **多语言 (i18n) 动态切换**：
-   - 所有的用户界面（主页邮件发送中心、Thymeleaf 极简示例页面、Doma SQL 交互示例页面）均完全双语化。
-   - 支持通过顶部的 `中文 | English` 链接切换语言（基于 Spring Boot `LocaleResolver` 和多语言资源文件 `message.properties` / `message_zh.properties` 进行解析）。
+1. **主控制面板 (`/`)**：
+   - 实时监控当前的 SMTP 邮件服务器配置项（通过 [mail.properties](src/main/resources/mail.properties) 可配置本地模拟服务器或真实 SMTP 代理）。
+   - 提供即时发送富文本 HTML 邮件的交互界面。
+   - 顶部提供快捷导航，可直达各项高级示例子系统。
+   - 支持通过顶部的 `中文 | English` 链接动态切换多语言界面（基于 Spring 的 LocaleResolver 与 `message.properties` 资源文件）。
 
-2. **首页控制中心 (ZeroTrace Main Center - `/`)**：
-   - 提供直观的 SMTP 配置项监控（主机地址、端口、账户名、发件人别名等），并支持直接发送单封富文本/HTML 邮件。
-   - 右侧主区域的右上方包含**功能导航 (Feature Navigation)** 快捷链接，作为各个演示场景的统一控制枢纽。
+2. **Thymeleaf 标签与 CRUD 示例 (`/demo/thymeleaf`)**：
+   - 集合展示了 Thymeleaf 的核心标签在实际项目中的使用方式，包括文本渲染（`th:text`/`th:placeholder`）、条件逻辑（`th:if`/`th:block`）、列表遍历（`th:each`）以及表单绑定（`th:object`/`th:field`）。
+   - 提供对 SQLite 邮件表记录的实时数据浏览与 CRUD 操作示例。
 
-3. **Thymeleaf 极简入门示例 (`/demo/thymeleaf`)**：
-   - **Thymeleaf 标签演示**：涵盖 `th:text`/`th:placeholder` 文本及占位符显示、`th:if`/`th:block` 条件渲染与控制、`th:each` 数据循环遍历、`th:object`/`th:field` 表单模型绑定，以及 `th:href` 动态路由及传参绑定。
-   - **交互式 CRUD**：可在页面上对 SQLite 模拟邮件数据库中的记录进行列表查看、添加新邮件、修改状态和删除等操作。
-
-4. **Doma 2 动态 SQL 交互控制台 (`/demo/doma`)**：
-   - **SQL 注释模板展示**：直观演示 Doma 2 所提倡的基于标准 SQL 注释的动态模板拼装（如 `/*%if */`、`/*%for */` 及可选日期过滤等）。由于语法基于原生 SQL 注释，这些 SQL 模板文件仍可被 DataGrip / DBeaver 等数据库工具直接读取和执行。
-   - **交互式 SQL 控制台**：开发者可在左侧参数面板输入条件并点击“执行查询 & 打印 SQL”，右侧的**终端日志控制台 (Doma Core SQL Logger Console)** 会高亮打印 Doma 在底层实际拼装出的 SQL 语句与参数绑定明细，并在下方渲染物理 SQLite 表中检索出的真实记录。
+3. **Doma 2 动态 SQL & 日志实时监控控制台 (`/demo/doma`)**：
+   - **动态 SQL 模板展示**：展示 Doma 2 如何利用标准的 SQL 注释（如 `/*%if */`、`/*%for */`）拼装动态 SQL。由于采用注释语法，SQL 模板文件在 DataGrip、DBeaver 等客户端中可独立作为有效 SQL 执行。
+   - **实时 SQL 解析日志终端**：在页面左侧调整查询参数并执行，右侧 of Doma Core 日志终端会实时高亮输出框架在底层生成的实际 SQL 和绑定参数，并在下方实时呈现数据库返回的数据，方便观察 Doma 2 的 SQL 生成逻辑与效率。
 
 ---
 
-## ⚙️ 快速上手与运行
+## 🚀 启动与运行示例
 
-### 1. 编译并运行集成测试
-在工程根目录下执行 Maven Wrapper 进行清理与编译测试：
+### 1. 执行测试与编译
+在工程根目录下使用 Maven Wrapper 进行测试和构建：
 ```bash
-# Windows 环境
+# Windows
 .\mvnw.cmd clean compile test
 
-# Linux/Mac 环境
+# Linux/Mac
 ./mvnw clean compile test
 ```
 
-### 2. 运行 Web 服务
-启动 Web 容器：
+### 2. 运行 Web 控制中心
 ```bash
-# Windows 环境
-.\mvnw.cmd spring-boot:run
-
-# Linux/Mac / Windows PowerShell 均支持
+# 启动 Web 容器并运行服务
 mvnw spring-boot:run
 ```
-访问本地默认端口：`http://localhost:8080`。
+启动后访问：`http://localhost:8080` 进入控制台。
 
-### 3. 本地邮件模拟配置
-您可以编辑 `src/main/resources/mail.properties` 中的 SMTP 服务器地址及模拟失败标志来进行各种网络条件和投递失败的演示。
+### 3. 以纯命令行模式运行 Spring Batch 批处理 (场景 1)
+```bash
+# 以非 Web 容器模式单独拉起 Batch 任务
+mvnw spring-boot:run -Dspring-boot.run.arguments="--run-batch-job"
+```
+
+### 4. 邮件发送模拟配置
+为方便在本地示例发送失败、网络异常和重试补偿，可在 [mail.properties](src/main/resources/mail.properties) 中调整以下控制项：
+- `mail.smtp.host` 和 `mail.smtp.port`：设置 SMTP 服务器参数。
+- `mail.debug.flag.smtp`：设置为 `true` 会开启 SMTP 交互的底层 JavaMail 日志。
+- `mail.debug.flag.send`：设置为 `FAIL_ALL` 或 `FAIL_RANDOM` 可主动模拟邮件投递失败，便于在本地直接观测消息队列重试机制和定时补偿任务的运行效果。
